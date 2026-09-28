@@ -1,7 +1,8 @@
-# Runs moresampler natively on Windows and through moreloader in WSL with the same arguments, and
-# compares every file that the two runs produce byte by byte.
+# Runs moresampler natively on Windows and through moreloader on Linux with the same arguments,
+# and compares every file that the two runs produce byte by byte.
 #
 #     python compare.py [--voice <voice bank>] [--wav name.wav ...] [--case frq|render|wavtool ...]
+#                       [--host <ssh host> [--runner <command>]]
 #
 # Run on Windows from any directory. The Windows side works in work/compare of the repository:
 #   bin/            moresampler.exe from work/moresampler and a moreconfig.txt for testing
@@ -9,6 +10,11 @@
 #   windows/        a fresh copy of source/, into which the runs write
 # The Linux side works in ~/moreloader-compare of WSL, with its own bin/ and linux/, because files
 # under /mnt are accessed through a slow network file system.
+#
+# With --host, the Linux side works in ~/moreloader-compare of that ssh host instead, which
+# receives a copy of the loader, and its output is fetched into work/compare/remote/ for the
+# comparison. --runner precedes the loader in each command, for example the path of FEX on an
+# ARM64 host.
 #
 # Both sides of a step run in parallel. Progress with the duration of each run is written to the
 # standard output and to work/compare/progress.log.
@@ -22,6 +28,7 @@
 import argparse
 import concurrent.futures
 import os
+import shlex
 import shutil
 import struct
 import subprocess
@@ -33,6 +40,8 @@ WORK = os.path.join(ROOT, 'work', 'compare')
 PROGRESS = os.path.join(WORK, 'progress.log')
 MORESAMPLER_DIR = os.path.join(ROOT, 'work', 'moresampler')
 LOADER = '/mnt/e/GitHub/moreloader/build/out/bin/moreloader'
+BUILT_LOADER = os.path.join(ROOT, 'build', 'out', 'bin', 'moreloader')
+REMOTE_COPY = os.path.join(WORK, 'remote')
 DISTRO = 'Ubuntu-24.04'
 
 DEFAULT_VOICE = (r'C:\Users\user\Downloads\歌声合成软件 UTAU v0.4.18 完整汉化版【修复4.5】'
@@ -58,8 +67,14 @@ analysis-f0-max 800.0
 load-frq off
 '''
 
-# Home directory in WSL, determined at start.
+# Home directory on the Linux side, determined at start.
 linuxHome = None
+
+# The ssh host of the Linux side, or None for WSL.
+host = None
+
+# The command that precedes the loader on the Linux side, as a list of words.
+runner = []
 
 
 def log(message):
@@ -69,13 +84,23 @@ def log(message):
         f.write(line + '\n')
 
 
+def linux_command(command):
+    """Returns the host command that runs a shell command on the Linux side."""
+    if host:
+        return ['ssh', host, command]
+    return ['wsl', '-d', DISTRO, '-e', 'bash', '-c', command]
+
+
 def wsl(command):
-    """Runs a shell command in WSL and returns its standard output."""
-    result = subprocess.run(['wsl', '-d', DISTRO, '-e', 'bash', '-c', command],
-                            capture_output=True)
+    """Runs a shell command on the Linux side and returns its standard output."""
+    result = subprocess.run(linux_command(command), capture_output=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode('utf-8', 'replace'))
     return result.stdout.decode('utf-8', 'replace').strip()
+
+
+def scp(*arguments):
+    subprocess.run(['scp', '-q', '-r'] + list(arguments), check=True)
 
 
 def wsl_path(path):
@@ -116,6 +141,13 @@ def prepare(voice, wavs):
     os.makedirs(os.path.join(WORK, 'windows', 'out'))
 
     target = linux_work()
+    if host:
+        wsl(f"rm -rf '{target}' && mkdir -p '{target}/linux/out'")
+        scp(os.path.join(WORK, 'bin'), f'{host}:{target}/bin')
+        scp(source, f'{host}:{target}/linux/voice')
+        scp(BUILT_LOADER, f'{host}:{target}/moreloader')
+        wsl(f"chmod +x '{target}/moreloader'")
+        return
     wsl(f"rm -rf '{target}' && mkdir -p '{target}/bin' '{target}/linux/out' && "
         f"cp '{wsl_path(os.path.join(WORK, 'bin'))}'/* '{target}/bin/' && "
         f"cp -r '{wsl_path(source)}' '{target}/linux/voice'")
@@ -137,7 +169,12 @@ def run(side, arguments):
         out = linux_work() + '/linux/out'
         exe = linux_work() + '/bin/moresampler.exe'
         args = [a.format(voice=voice, out=out, sep='/') for a in arguments]
-        command = ['wsl', '-d', DISTRO, '--cd', out, '-e', LOADER, exe] + args
+        if host:
+            words = runner + [linux_work() + '/moreloader', exe] + args
+            command = linux_command(f'cd {shlex.quote(out)} && ' +
+                                    ' '.join(shlex.quote(w) for w in words))
+        else:
+            command = ['wsl', '-d', DISTRO, '--cd', out, '-e', LOADER, exe] + args
         cwd = None
     result = subprocess.run(command, cwd=cwd, stdin=subprocess.DEVNULL, capture_output=True)
     return (result.returncode, result.stdout.decode('utf-8', 'replace'),
@@ -167,7 +204,13 @@ def mrq_without_timestamps(data):
 
 def compare_trees():
     left = os.path.join(WORK, 'windows')
-    right = linux_unc(linux_work() + '/linux')
+    if host:
+        if os.path.isdir(REMOTE_COPY):
+            shutil.rmtree(REMOTE_COPY)
+        scp(f'{host}:{linux_work()}/linux', REMOTE_COPY)
+        right = REMOTE_COPY
+    else:
+        right = linux_unc(linux_work() + '/linux')
     names = set()
     for base in (left, right):
         for directory, _, files in os.walk(base):
@@ -210,12 +253,16 @@ def compare_trees():
 
 
 def main():
-    global linuxHome
+    global linuxHome, host, runner
     parser = argparse.ArgumentParser()
     parser.add_argument('--voice', default=DEFAULT_VOICE)
     parser.add_argument('--wav', action='append', default=None)
     parser.add_argument('--case', action='append', default=None)
+    parser.add_argument('--host', default=None)
+    parser.add_argument('--runner', default='')
     options = parser.parse_args()
+    host = options.host
+    runner = shlex.split(options.runner)
     wavs = options.wav or ['ae.wav', 'baf.wav', 'bam.wav']
     cases = options.case or ['frq', 'render', 'wavtool']
 
