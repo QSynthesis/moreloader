@@ -1,0 +1,49 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+build-src*
+build/
+build-*/
+cmake-build*
+*.user
+*.lnk
+.vscode
+.idea
+.cache
+cache
+.vs
+out/
+CMakeSettings.json
+
+# Copies of moresampler, voice banks and outputs used for analysis and comparison. The license of
+# moresampler forbids distributing it as part of this project.
+/work/
+
+# Python bytecode of the scripts.
+__pycache__/

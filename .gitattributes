@@ -1,0 +1,5 @@
+# Scripts that run in WSL or on Linux must keep LF line endings in a Windows checkout.
+*.sh text eol=lf
+
+# Golden data is compared byte for byte by the tests.
+moreloader/tests/auto/data/** text eol=lf
