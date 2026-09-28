@@ -1,0 +1,83 @@
+fopen	r	0	null	2
+_wfopen	r	0	null	2
+fopen	r	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+_wfopen	r	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+fopen	rb	0	null	2
+_wfopen	rb	0	null	2
+fopen	rb	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+_wfopen	rb	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+fopen	rt	0	null	2
+_wfopen	rt	0	null	2
+fopen	rt	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+_wfopen	rt	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+fopen	w	0	open	0		0	0	0	x\x0D\x0Ay
+_wfopen	w	0	open	0		0	0	0	x\x0D\x0Ay
+fopen	w	1	open	0		0	0	0	x\x0D\x0Ay
+_wfopen	w	1	open	0		0	0	0	x\x0D\x0Ay
+fopen	wb	0	open	0		0	0	0	x\x0Ay
+_wfopen	wb	0	open	0		0	0	0	x\x0Ay
+fopen	wb	1	open	0		0	0	0	x\x0Ay
+_wfopen	wb	1	open	0		0	0	0	x\x0Ay
+fopen	wt	0	open	0		0	0	0	x\x0D\x0Ay
+_wfopen	wt	0	open	0		0	0	0	x\x0D\x0Ay
+fopen	wt	1	open	0		0	0	0	x\x0D\x0Ay
+_wfopen	wt	1	open	0		0	0	0	x\x0D\x0Ay
+fopen	w+b	0	open	0		0	0	0	x\x0Ay
+_wfopen	w+b	0	open	0		0	0	0	x\x0Ay
+fopen	w+b	1	open	0		0	0	0	x\x0Ay
+_wfopen	w+b	1	open	0		0	0	0	x\x0Ay
+fopen	a	0	open	0		0	0	0	x\x0D\x0Ay
+_wfopen	a	0	open	0		0	0	0	x\x0D\x0Ay
+fopen	a	1	open	0		0	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0D\x0Ay
+_wfopen	a	1	open	0		0	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0D\x0Ay
+fopen	ab	0	open	0		0	0	0	x\x0Ay
+_wfopen	ab	0	open	0		0	0	0	x\x0Ay
+fopen	ab	1	open	0		0	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0Ay
+_wfopen	ab	1	open	0		0	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0Ay
+fopen	r+	0	null	2
+_wfopen	r+	0	null	2
+fopen	r+	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0D\x0Ay
+_wfopen	r+	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0D\x0Ay
+fopen	r+b	0	null	2
+_wfopen	r+b	0	null	2
+fopen	r+b	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0Ay
+_wfopen	r+b	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0Ay
+fopen	rb+	0	null	2
+_wfopen	rb+	0	null	2
+fopen	rb+	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0Ay
+_wfopen	rb+	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	0	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Aex\x0Ay
+fopen	rw	0	null	2
+_wfopen	rw	0	null	22
+fopen	rw	1	open	0	a\x0Ab\x0Dc\x0D\x0Ad	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+_wfopen	rw	1	null	22
+fopen	wr	0	null	22
+_wfopen	wr	0	null	22
+fopen	wr	1	null	22
+_wfopen	wr	1	null	22
+fopen	rwb	0	null	2
+_wfopen	rwb	0	null	22
+fopen	rwb	1	open	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae	12	-1	0	a\x0D\x0Ab\x0Dc\x0D\x0D\x0Ad\x1Ae
+_wfopen	rwb	1	null	22
+fopen	wrb	0	null	22
+_wfopen	wrb	0	null	22
+fopen	wrb	1	null	22
+_wfopen	wrb	1	null	22
+fopen	rx	0	null	22
+_wfopen	rx	0	null	22
+fopen	rx	1	null	22
+_wfopen	rx	1	null	22
+fopen	wx	0	null	22
+_wfopen	wx	0	null	22
+fopen	wx	1	null	22
+_wfopen	wx	1	null	22
+fopen	w+	0	open	22		0	0	0	x\x0D\x0Ay
+_wfopen	w+	0	open	22		0	0	0	x\x0D\x0Ay
+fopen	w+	1	open	22		0	0	0	x\x0D\x0Ay
+_wfopen	w+	1	open	22		0	0	0	x\x0D\x0Ay
+fopen		0	null	22
+_wfopen		0	null	22
+fopen		1	null	22
+_wfopen		1	null	22
+fgets	r	a\x0A|4;b\x0Dc\x0D\x0A|10;d|12;	16
+fread	r	a\x0Ab\x0Dc	7	\x0D\x0Ad	16
+fwrite	w	11	l1\x0D\x0Al2\x0D\x0D\x0Al3\x0D\x0A\x0D\x0A

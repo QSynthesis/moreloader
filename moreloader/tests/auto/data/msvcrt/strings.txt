@@ -1,0 +1,81 @@
+strerror	-1	Unknown error
+strerror	0	No error
+strerror	1	Operation not permitted
+strerror	2	No such file or directory
+strerror	3	No such process
+strerror	4	Interrupted function call
+strerror	5	Input/output error
+strerror	6	No such device or address
+strerror	7	Arg list too long
+strerror	8	Exec format error
+strerror	9	Bad file descriptor
+strerror	10	No child processes
+strerror	11	Resource temporarily unavailable
+strerror	12	Not enough space
+strerror	13	Permission denied
+strerror	14	Bad address
+strerror	15	Unknown error
+strerror	16	Resource device
+strerror	17	File exists
+strerror	18	Improper link
+strerror	19	No such device
+strerror	20	Not a directory
+strerror	21	Is a directory
+strerror	22	Invalid argument
+strerror	23	Too many open files in system
+strerror	24	Too many open files
+strerror	25	Inappropriate I/O control operation
+strerror	26	Unknown error
+strerror	27	File too large
+strerror	28	No space left on device
+strerror	29	Invalid seek
+strerror	30	Read-only file system
+strerror	31	Too many links
+strerror	32	Broken pipe
+strerror	33	Domain error
+strerror	34	Result too large
+strerror	35	Unknown error
+strerror	36	Resource deadlock avoided
+strerror	37	Unknown error
+strerror	38	Filename too long
+strerror	39	No locks available
+strerror	40	Function not implemented
+strerror	41	Directory not empty
+strerror	42	Illegal byte sequence
+strerror	43	Unknown error
+strerror	44	Unknown error
+strerror	45	Unknown error
+asctime	Wed Jan 02 02:03:55 1980\x0A
+asctime	Thu Dec 31 00:00:00 2026\x0A
+asctime	Mon Sep 28 17:08:09 2026\x0A
+_ultoa	0	2	0
+_ultoa	0	8	0
+_ultoa	0	10	0
+_ultoa	0	16	0
+_ultoa	0	36	0
+_ultoa	1	2	1
+_ultoa	1	8	1
+_ultoa	1	10	1
+_ultoa	1	16	1
+_ultoa	1	36	1
+_ultoa	255	2	11111111
+_ultoa	255	8	377
+_ultoa	255	10	255
+_ultoa	255	16	ff
+_ultoa	255	36	73
+_ultoa	4294967295	2	11111111111111111111111111111111
+_ultoa	4294967295	8	37777777777
+_ultoa	4294967295	10	4294967295
+_ultoa	4294967295	16	ffffffff
+_ultoa	4294967295	36	1z141z3
+_mbslen		0
+_mbslen	abc	3
+_mbslen	\xE4\xBD\xA0\xE5\xA5\xBD	3
+_mbslen	\xC4\xE3\xBA\xC3	2
+_mbslen	a\x81	1
+_stricmp	abc	ABC	0	0
+_stricmp	abc	abd	-1	0
+_stricmp	a	ab	-1	0
+_stricmp	[	a	-1	-1
+_stricmp	_	A	-1	-1
+_stricmp	\xE9	\xC9	1	1

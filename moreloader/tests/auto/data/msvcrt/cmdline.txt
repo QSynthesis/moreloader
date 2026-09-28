@@ -1,0 +1,20 @@
+prog a b c	4	prog	a	b	c
+"C:\x5CProgram Files\x5Cx.exe" arg	2	C:\x5CProgram Files\x5Cx.exe	arg
+prog "a b" c	3	prog	a b	c
+prog a\x5C\x5Cb c\x5Cd	3	prog	a\x5C\x5Cb	c\x5Cd
+prog "a\x5C"b"	2	prog	a"b
+prog a\x5C\x5C\x5C"b	2	prog	a\x5C"b
+prog a\x5C\x5C\x5C\x5C"b c" d	3	prog	a\x5C\x5Cb c	d
+prog ""	2	prog	
+prog """"	2	prog	"
+prog """"""	2	prog	""
+prog "a""b"	2	prog	a"b
+prog a"b"c	2	prog	abc
+prog   spaced\x09\x09tabs  	3	prog	spaced	tabs
+"prog with \x5C"quote" x	2	prog with \x5C	quote x
+prog\x5Csub\x5Cx.exe "trail\x5C\x5C"	2	prog\x5Csub\x5Cx.exe	trail\x5C
+prog "unterminated	2	prog	unterminated
+prog \xE4\xBD\xA0\xE5\xA5\xBD "\xC3\xA9 \xC3\xA9"	3	prog	\xE4\xBD\xA0\xE5\xA5\xBD	\xC3\xA9 \xC3\xA9
+prog in.wav out.wav C4 100 "" 0 500 0 0 100 0 !120 AA#5#	14	prog	in.wav	out.wav	C4	100		0	500	0	0	100	0	!120	AA#5#
+ leading	2		leading
+	1	E:\x5CGitHub\x5Cmoreloader\x5Cwork\x5Cprobe\x5CMsvcrtProbe.exe

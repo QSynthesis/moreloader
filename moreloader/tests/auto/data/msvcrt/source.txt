@@ -1,0 +1,2 @@
+msvcrt	C:\WINDOWS\System32\msvcrt.dll	7.0.26100.8875
+acp	936

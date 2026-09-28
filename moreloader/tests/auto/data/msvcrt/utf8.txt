@@ -1,0 +1,22 @@
+mbtowc	abc	3	0061 0062 0063	3	0
+mbtowc	\xC3\xA9	1	00E9	1	0
+mbtowc	\xE4\xBD\xA0	1	4F60	1	0
+mbtowc	\xF0\x9F\x8E\xB5	2	D83C DFB5	2	0
+mbtowc	\x80	1	FFFD	0	1113
+mbtowc	\xC0\xAF	2	FFFD FFFD	0	1113
+mbtowc	\xE4\xBDa	2	FFFD 0061	0	1113
+mbtowc	\xED\xA0\x80	2	FFFD FFFD	0	1113
+mbtowc	\xF4\x90\x80\x80	3	FFFD FFFD FFFD	0	1113
+mbtowc	\xFF\xFE	2	FFFD FFFD	0	1113
+mbtowc	a\xE4	2	0061 FFFD	0	1113
+mbtowc	\xF0\x9F\x8E	1	FFFD	0	1113
+mbtowc	\xE0\x80\x80	2	FFFD FFFD	0	1113
+mbtowc	\xC2	1	FFFD	0	1113
+mbtowc	\xF5\x80\x80\x80	4	FFFD FFFD FFFD FFFD	0	1113
+wctomb	0061 0062 0063	4	abc\x00
+wctomb	00E9	3	\xC3\xA9\x00
+wctomb	D83C DFB5	5	\xF0\x9F\x8E\xB5\x00
+wctomb	D800	4	\xEF\xBF\xBD\x00
+wctomb	0061 DC00	5	a\xEF\xBF\xBD\x00
+wctomb	DC00 D800	7	\xEF\xBF\xBD\xEF\xBF\xBD\x00
+mbtowc-length	4	0	122
