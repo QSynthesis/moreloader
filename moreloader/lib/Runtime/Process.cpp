@@ -154,6 +154,10 @@ namespace more::loader {
         m_initialThread = &GuestThread::attachInitialThread();
         installFaultHandlers();
 
+        for (auto hook : m_startupHooks) {
+            hook();
+        }
+
         runTLSCallbacks(DLLProcessAttach);
 
         // The entry point of an executable is called by the initial thread with the address of
@@ -198,6 +202,10 @@ namespace more::loader {
     bool Process::isTLSSlotAllocated(std::uint32_t slot) {
         std::lock_guard<std::mutex> lock(m_tlsMutex);
         return slot < tlsMinimumAvailable && (m_tlsSlots & (std::uint64_t(1) << slot));
+    }
+
+    void Process::addStartupHook(void (*hook)()) {
+        m_startupHooks.push_back(hook);
     }
 
     void Process::threadStarted() {

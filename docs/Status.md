@@ -12,7 +12,7 @@
 | `MoreLoaderCRT` | msvcrt 的纯计算部分：printf 引擎、`qsort`、`rand`、`strtol` 族与 `atof`、字符分类、`strerror` 与 `asctime`、导入的数学函数，均与黄金数据比对 |
 | `MoreLoaderImage` | PE 解析与固定基址映射，尚无测试 |
 | `MoreLoaderRuntime` | 导出注册表、TEB/LDT/FS、客体线程、内核对象与等待、进程启动与退出、桩代码与故障报告，尚未运行 |
-| `MoreLoaderWin32` 与 CRT 的导出包装 | 编写中 |
+| `MoreLoaderWinAPI` 与 CRT 的导出包装 | 已实现；不带参数运行 moresampler 的行为与 Windows 一致，见 [`20260928-loader-first-run.md`](20260928-loader-first-run.md) |
 
 ## 待办
 
@@ -20,8 +20,8 @@
 
 - [x] 子库骨架与构建验证
 - [x] Windows 探针：`msvcrt.dll` 的 printf、`qsort`、`rand`、文件模式、数学函数
-- [ ] kernel32 与 msvcrt 的导出包装
-- [ ] 驱动运行到 `main`
+- [x] kernel32 与 msvcrt 的导出包装
+- [x] 驱动运行到 `main`
 - [ ] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）
 - [ ] 渲染的比较（resampler 模式）
 - [ ] wavtool 模式的比较

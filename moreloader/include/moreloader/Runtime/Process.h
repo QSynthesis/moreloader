@@ -116,6 +116,11 @@ namespace more::loader {
         /// Returns whether \a slot was allocated by allocateTLSSlot().
         bool isTLSSlotAllocated(std::uint32_t slot);
 
+        /// Adds a function that run() calls after the command line and the initial thread are
+        /// prepared and before any guest code runs. The C runtime initializes its data exports
+        /// this way.
+        void addStartupHook(void (*hook)());
+
         /// Counts the guest threads other than the initial thread that are running.
         void threadStarted();
         void threadExited();
@@ -138,6 +143,8 @@ namespace more::loader {
         std::uint64_t m_tlsSlots = 0;
 
         std::atomic<int> m_runningThreads{0};
+
+        std::vector<void (*)()> m_startupHooks;
     };
 
     /// The process of the loader. There is exactly one.

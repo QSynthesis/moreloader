@@ -7,5 +7,5 @@ file(GLOB_RECURSE _src CONFIGURE_DEPENDS "*.cpp")
 
 moreloader_add_executable(${PROJECT_NAME} CONSOLE
     SOURCES ${_src}
-    LINKS MoreLoaderSupport Threads::Threads
+    LINKS MoreLoaderWinAPI MoreLoaderCRT
 )
