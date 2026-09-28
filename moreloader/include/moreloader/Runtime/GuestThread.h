@@ -17,9 +17,9 @@ namespace more::loader {
 
     /// The state of a host thread that runs guest code.
     ///
-    /// Before any guest code runs on a thread, the thread receives a TEB of its own, an LDT
-    /// entry for that TEB loaded into FS, the x87 control word and MXCSR of Windows, a copy of
-    /// the static TLS template of the image and an alternate signal stack for fault reports.
+    /// Before any guest code runs on a thread, the thread receives a TEB of its own, a segment
+    /// descriptor for that TEB loaded into FS, the x87 control word and MXCSR of Windows, a copy
+    /// of the static TLS template of the image and an alternate signal stack for fault reports.
     class GuestThread {
     public:
         /// Returns the guest thread of the calling host thread, or \c nullptr if the calling
@@ -79,7 +79,6 @@ namespace more::loader {
 
         std::shared_ptr<ThreadObject> m_object;
         TEB32 *m_teb = nullptr;
-        std::uint16_t m_selector = 0;
         void *m_tlsBlock = nullptr;
         std::uint32_t *m_tlsArray = nullptr;
         void *m_signalStack = nullptr;

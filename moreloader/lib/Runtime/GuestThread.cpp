@@ -13,8 +13,8 @@
 #include <moreloader/Support/Diagnostics.h>
 #include <moreloader/Support/FloatingPoint.h>
 
-#include "LDT.h"
 #include "Process.h"
+#include "ThreadArea.h"
 
 namespace more::loader {
 
@@ -92,13 +92,12 @@ namespace more::loader {
             m_teb->ThreadLocalStoragePointer = addressOf(m_tlsArray);
         }
 
-        auto selector = allocateDataSegment(addressOf(m_teb), sizeof(TEB32) - 1);
+        auto selector = setThreadArea(addressOf(m_teb), sizeof(TEB32) - 1);
         if (!selector) {
-            fatal("cannot allocate an LDT entry for the TEB of thread %u",
+            fatal("cannot set the segment descriptor for the TEB of thread %u",
                   unsigned(m_object->threadID()));
         }
-        m_selector = *selector;
-        loadFS(m_selector);
+        loadFS(*selector);
 
         setX87ControlWord(windowsControlWord);
         setMXCSR(windowsMXCSR);
@@ -122,7 +121,6 @@ namespace more::loader {
 
         t_current = nullptr;
         loadFS(0);
-        releaseDataSegment(m_selector);
         std::free(m_tlsArray);
         std::free(m_tlsBlock);
         ::munmap(m_teb, sizeof(TEB32));

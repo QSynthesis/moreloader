@@ -24,7 +24,7 @@
 |---|---|---|
 | `MoreLoaderSupport` | `Support/` | 与客体无关的基础设施：UTF-16 字符串与 UTF-8 的转换、客体路径与主机路径的映射、Windows 命令行的拼接与拆分、诊断输出。可在主机上直接测试 |
 | `MoreLoaderImage` | `Image/` | PE 文件的解析（头、节、导入、TLS 目录），映像在固定基址的映射，IAT 的填写，未解析导入的报错桩与调用跟踪桩 |
-| `MoreLoaderRuntime` | `Runtime/` | 与客体 ABI 相关的基础设施：导出注册表，PEB、TEB 与 LDT，x87 控制字，静态 TLS 与 TLS 回调，句柄表与可等待对象，客体线程，进程的启动与退出，故障诊断 |
+| `MoreLoaderRuntime` | `Runtime/` | 与客体 ABI 相关的基础设施：导出注册表，PEB、TEB 与 FS 段，x87 控制字，静态 TLS 与 TLS 回调，句柄表与可等待对象，客体线程，进程的启动与退出，故障诊断 |
 | `MoreLoaderWinAPI` | `WinAPI/` | kernel32、shell32、shlwapi、user32 的导出 |
 | `MoreLoaderCRT` | `CRT/` | msvcrt 的导出：启动与退出、stdio、printf 族、宽字符串、`qsort`、`rand`、errno、时间、数学函数、`_setjmp3` 与 `longjmp` |
 | `moreloader` | `tools/driver/` | 薄驱动：解析命令行，建立注册表，注册 WinAPI 与 CRT 的导出，运行映像 |
@@ -75,7 +75,7 @@ moreloader/tests/manual/                       ← 与 Windows 原生运行的�
 - getter 使用所读取的属性名，setter 使用 `set` 加属性名。
 - 全局非静态变量使用 `g_` 前缀，全局静态变量使用 `s_` 前缀。应尽量避免引入全局可变状态。
 - 常量（`const`、`constexpr`）使用小驼峰，不加 `g_`、`s_` 前缀。
-- **缩写词全大写**，与 LLVM 相同（`COFFObjectFile`、`getTypeID`）：写 `PEFile`、`PETLSDirectory`、`LDT.h`、`loadFS`、`threadID`、`entryPointRVA`、`DLLReason`、`toLowerASCII`、`MoreLoaderCRT`。缩写位于小驼峰名字的开头时全小写：`teb()`、`tlsTemplate()`、`pebAddress()`。
+- **缩写词全大写**，与 LLVM 相同（`COFFObjectFile`、`getTypeID`）：写 `PEFile`、`PETLSDirectory`、`loadFS`、`threadID`、`entryPointRVA`、`DLLReason`、`toLowerASCII`、`MoreLoaderCRT`。缩写位于小驼峰名字的开头时全小写：`teb()`、`tlsTemplate()`、`pebAddress()`。
 - 缩写规则的例外只有逐字对应 Windows 的名字：Windows API 与 SDK 结构的名字保留原拼写，例如包装函数 `kernel32_GetCurrentProcessId`、`TEB32::TlsSlots`、`CRITICAL_SECTION32::LockSemaphore`。本仓库自己设计的类型即使描述的是 Windows 的概念，也适用缩写规则，例如 `PETLSDirectory`。
 - 命名空间结束处不添加注释。
 
