@@ -19,4 +19,8 @@ add_subdirectory(lib)
 
 add_subdirectory(tools)
 
+if(MORE_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
 moreloader_finish_buildsystem()
