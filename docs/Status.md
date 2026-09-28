@@ -22,8 +22,9 @@
 - [x] Windows 探针：`msvcrt.dll` 的 printf、`qsort`、`rand`、文件模式、数学函数
 - [x] kernel32 与 msvcrt 的导出包装
 - [x] 驱动运行到 `main`
-- [ ] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）
-- [ ] 渲染的比较（resampler 模式）
+- [x] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）：逐字节一致，见 [`20260929-first-comparison.md`](20260929-first-comparison.md)
+- [x] 单个音符的渲染（resampler 模式）：逐字节一致
+- [ ] 真实工程的完整渲染：helloutau 生成成对的批处理与 shell 脚本，逐步比较采样
 - [ ] wavtool 模式的比较
 - [ ] 若比较因 `0x433836` 处 `sinh` 的 80 位结果不一致，按 msvcrt 的 x87 算法复现 `sinh`
 - [ ] README 的构建、用法与许可证说明
