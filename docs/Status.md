@@ -11,7 +11,7 @@
 | `MoreLoaderSupport` | `CodePage`（Windows 规则的 UTF-8 解码）、`CommandLine`（`CommandLineToArgvW` 规则）、`PathMapping`（`Z:` 映射）、`Diagnostics`、`FloatingPoint`，均有测试 |
 | `MoreLoaderCRT` | msvcrt 的纯计算部分：printf 引擎、`qsort`、`rand`、`strtol` 族与 `atof`、字符分类、`strerror` 与 `asctime`、导入的数学函数，均与黄金数据比对 |
 | `MoreLoaderImage` | PE 解析与固定基址映射，尚无测试 |
-| `MoreLoaderRuntime` | 导出注册表、TEB/LDT/FS、客体线程、内核对象与等待、进程启动与退出、桩代码与故障报告，尚未运行 |
+| `MoreLoaderRuntime` | 导出注册表、TEB 与 FS 段、客体线程、内核对象与等待、进程启动与退出、桩代码与故障报告，尚未运行 |
 | `MoreLoaderWinAPI` 与 CRT 的导出包装 | 已实现；不带参数运行 moresampler 的行为与 Windows 一致，见 [`20260928-loader-first-run.md`](20260928-loader-first-run.md) |
 
 ## 待办
@@ -32,6 +32,5 @@
 里程碑 2（Linux ARM64，经 FEX-Emu 或 box64）：
 
 - 环境：`ssh spark`（aarch64），FEX 位于 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`。
-- 冒烟测试（2026-09-29，实测）：静态链接的 `moreloader` 在 FEX 下运行 `--help` 与报告找不到文件均正常；运行 moresampler 时以 SIGILL（退出码 132）结束，没有任何输出，加载器的故障报告也没有出现。推断与 `modify_ldt` 或以 LDT 选择子装入 FS 有关，尚未查证。
-- [ ] 定位 FEX 下的 SIGILL，确认 FEX 对 `modify_ldt` 与 FS 段的支持
+- [x] 定位 FEX 下的 SIGILL：FEX 对 32 位客体的 `modify_ldt` 是中止进程的桩。FS 段改用 `set_thread_area` 的 GDT TLS 项后，频率表生成、resampler 与 wavtool 的 13 个文件与 Windows 逐字节一致，多线程合成同样一致，见 [`20260929-fex.md`](20260929-fex.md)
 - [ ] box64（BOX32）的对照

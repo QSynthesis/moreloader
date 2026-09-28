@@ -54,8 +54,8 @@
 
 | 平台 | 方案 | 结论 |
 |---|---|---|
-| Linux x86_64 | 加载器编译为 32 位 Linux 程序（`-m32`，非 PIE，避开 `0x400000`–`0x4ed000`）；以 `modify_ldt` 为每个线程建立一个 LDT 数据段，基址为该线程伪造的 TEB，装入 FS（i386 glibc 用 GS 作 TLS，FS 空闲；Wine 采用同样做法） | 里程碑 1 |
-| Linux ARM64 | 同一个 32 位加载器，由 FEX-Emu 或 box64（BOX32）转译运行；须确认转译器对 `modify_ldt` 与 FS 段的支持 | 里程碑 2 |
+| Linux x86_64 | 加载器编译为 32 位 Linux 程序（`-m32`，非 PIE，避开 `0x400000`–`0x4ed000`）；以 `set_thread_area` 分配一个 GDT 的 TLS 项（该项属于每个线程），每个线程在其中写入自己伪造的 TEB 的基址，装入 FS（i386 glibc 用 GS 作 TLS，FS 空闲）。不使用 `modify_ldt`，因为 FEX-Emu 对 32 位客体的 `modify_ldt` 是中止进程的桩，见 [`20260929-fex.md`](20260929-fex.md) | 里程碑 1 |
+| Linux ARM64 | 同一个 32 位加载器，由 FEX-Emu 或 box64（BOX32）转译运行；FEX-Emu 支持 32 位的 `set_thread_area` 与 `mov fs`（实测），box64 待确认 | 里程碑 2 |
 | macOS | 不支持（第 1 节） | 不做 |
 
 ## 5. 设计要点
