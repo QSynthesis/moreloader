@@ -29,4 +29,9 @@
 - [ ] 若比较因 `0x433836` 处 `sinh` 的 80 位结果不一致，按 msvcrt 的 x87 算法复现 `sinh`
 - [ ] README 的构建、用法与许可证说明
 
-里程碑 2（Linux ARM64，经 FEX-Emu 或 box64）：尚未开始。
+里程碑 2（Linux ARM64，经 FEX-Emu 或 box64）：
+
+- 环境：`ssh spark`（aarch64），FEX 位于 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`。
+- 冒烟测试（2026-09-29，实测）：静态链接的 `moreloader` 在 FEX 下运行 `--help` 与报告找不到文件均正常；运行 moresampler 时以 SIGILL（退出码 132）结束，没有任何输出，加载器的故障报告也没有出现。推断与 `modify_ldt` 或以 LDT 选择子装入 FS 有关，尚未查证。
+- [ ] 定位 FEX 下的 SIGILL，确认 FEX 对 `modify_ldt` 与 FS 段的支持
+- [ ] box64（BOX32）的对照

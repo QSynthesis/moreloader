@@ -47,6 +47,7 @@ ctest --test-dir build --no-tests=error
   - Ghidra：`D:\usr\tools\ghidra_12.0.4_PUBLIC`，本仓库的工程为 `C:\Users\user\ghidra-projects\projects\moresampler\moresampler_exe_084.gpr`，见 [`docs/ReverseGuide.md`](docs/ReverseGuide.md)。
   - MSVC 2022：用于编译在 Windows 上测量 `msvcrt.dll` 行为的探针程序。
 - 另一台 Linux 主机 `ssh overworld`（Ubuntu 22.04，GCC 11）可作为备用测试环境，同样没有 `gcc-multilib`。
+- **里程碑 2 的 ARM64 主机**：`ssh spark`（aarch64，Ubuntu 24.04，20 核，GCC 13）。FEX-Emu 已构建在 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`，以 `FEX ./moreloader <moresampler.exe> …` 运行 x86 的加载器。加载器静态链接，因此不需要 x86 的 rootfs。
 
 ## 本仓库的约束
 
