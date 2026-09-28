@@ -17,7 +17,7 @@ file(GLOB_RECURSE _src CONFIGURE_DEPENDS *.cpp)
 
 moreloader_add_executable(${PROJECT_NAME} TEST CONSOLE
     SOURCES ${_src}
-    LINKS Boost::unit_test_framework MoreLoaderSupport
+    LINKS Boost::unit_test_framework MoreLoaderSupport MoreLoaderCRT
 )
 
 # Golden data measured on Windows by moreloader/tests/probe, read from the source tree.
