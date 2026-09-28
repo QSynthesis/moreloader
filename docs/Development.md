@@ -14,7 +14,7 @@
 
 `more` 仅作为外层命名空间，代码一律位于第二层。不要在 `more` 中直接声明内容，也不要再增加第三层。
 
-**例外：模拟 Windows 语义的代码位于第三层命名空间 `more::loader::msvcrt` 与 `more::loader::win32`。** 其中的名字与被模拟的函数一一对应（`msvcrt::quickSort` 模拟 `qsort`，`msvcrt::atof` 模拟 `atof`），第三层命名空间使这些名字不带 `msvcrt` 前缀，同时不与主机的同名函数混淆。在这两个命名空间内调用主机的 C 函数时一律加 `std::` 或全局限定，否则 `tan(x)` 会解析为 `msvcrt::tan`。
+**例外：模拟 Windows 语义的代码位于第三层命名空间 `more::loader::msvcrt` 与 `more::loader::winapi`。** 其中的名字与被模拟的函数一一对应（`msvcrt::quickSort` 模拟 `qsort`，`msvcrt::atof` 模拟 `atof`），第三层命名空间使这些名字不带 `msvcrt` 前缀，同时不与主机的同名函数混淆。在这两个命名空间内调用主机的 C 函数时一律加 `std::` 或全局限定，否则 `tan(x)` 会解析为 `msvcrt::tan`。
 
 **应用由库和一个薄驱动组成**，结构参照 lldb 的 `liblldb` 与 `tools/driver`。`tools/driver/main.cpp` 只包含入口，其余逻辑均位于库中，因此同样可以测试。
 
@@ -25,11 +25,11 @@
 | `MoreLoaderSupport` | `Support/` | 与客体无关的基础设施：UTF-16 字符串与 UTF-8 的转换、客体路径与主机路径的映射、Windows 命令行的拼接与拆分、诊断输出。可在主机上直接测试 |
 | `MoreLoaderImage` | `Image/` | PE 文件的解析（头、节、导入、TLS 目录），映像在固定基址的映射，IAT 的填写，未解析导入的报错桩与调用跟踪桩 |
 | `MoreLoaderRuntime` | `Runtime/` | 与客体 ABI 相关的基础设施：导出注册表，PEB、TEB 与 LDT，x87 控制字，静态 TLS 与 TLS 回调，句柄表与可等待对象，客体线程，进程的启动与退出，故障诊断 |
-| `MoreLoaderWin32` | `Win32/` | kernel32、shell32、shlwapi、user32 的导出 |
+| `MoreLoaderWinAPI` | `WinAPI/` | kernel32、shell32、shlwapi、user32 的导出 |
 | `MoreLoaderCRT` | `CRT/` | msvcrt 的导出：启动与退出、stdio、printf 族、宽字符串、`qsort`、`rand`、errno、时间、数学函数、`_setjmp3` 与 `longjmp` |
-| `moreloader` | `tools/driver/` | 薄驱动：解析命令行，建立注册表，注册 Win32 与 CRT 的导出，运行映像 |
+| `moreloader` | `tools/driver/` | 薄驱动：解析命令行，建立注册表，注册 WinAPI 与 CRT 的导出，运行映像 |
 
-`MoreLoaderWin32` 与 `MoreLoaderCRT` 互不依赖，二者共同需要的设施（句柄、线程、errno 以外的每线程状态）位于 `MoreLoaderRuntime`。它们对外只公开注册函数，以及为测试而公开的纯计算部分（例如 printf 的格式化引擎）。
+`MoreLoaderWinAPI` 与 `MoreLoaderCRT` 互不依赖，二者共同需要的设施（句柄、线程、errno 以外的每线程状态）位于 `MoreLoaderRuntime`。它们对外只公开注册函数，以及为测试而公开的纯计算部分（例如 printf 的格式化引擎）。
 
 **基础设施优先使用 stdcorelib**，与 HelloUtau 相同，作为子库的私有依赖（`LINKS_PRIVATE stdcorelib::stdcorelib`），不出现在公开头文件中。stdcorelib 为通用目的设计，其行为与 Windows 不一致之处不能用于模拟 Windows 的语义，例如 `stdc::system::split_command_line` 不按 `CommandLineToArgvW` 的反斜杠规则拆分。
 
@@ -53,7 +53,7 @@ moreloader/tests/manual/                       ← 与 Windows 原生运行的�
 
 仅供多个实现文件复用且不独立编译的实现片段可以使用 `.cpp.inc` 后缀。
 
-文件名采用大驼峰命名并与其中的主要类型一致。程序入口 `main.cpp` 保持小写。子库的全局宏放在 `<目标名>Global.h`，与 HelloUtau 相同，例如 `MoreLoaderSupportGlobal.h`。包装层按 DLL 与功能分文件，例如 `lib/Win32/Kernel32Sync.cpp`、`lib/CRT/Stdio.cpp`。
+文件名采用大驼峰命名并与其中的主要类型一致。程序入口 `main.cpp` 保持小写。子库的全局宏放在 `<目标名>Global.h`，与 HelloUtau 相同，例如 `MoreLoaderSupportGlobal.h`。包装层按 DLL 与功能分文件，例如 `lib/WinAPI/Kernel32Sync.cpp`、`lib/CRT/Stdio.cpp`。
 
 ## 大小写
 

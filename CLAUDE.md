@@ -78,7 +78,7 @@ ctest --test-dir build --no-tests=error
 
 目录、命名、格式、注释与头文件引用见 [`docs/Development.md`](docs/Development.md)，它才是权威，以下仅为摘要。规则取自 HelloUtau 的 `AGENTS.md` 与 `docs/Development.md`，本仓库特有的差异在 `docs/Development.md` 中说明理由。
 
-- 一个模块 `moreloader`（命名空间 `more::loader`；模拟 msvcrt 与 Windows 语义的代码位于 `more::loader::msvcrt` 与 `more::loader::win32`），由若干静态子库与一个薄驱动组成：`MoreLoaderSupport`、`MoreLoaderImage`、`MoreLoaderRuntime`、`MoreLoaderWin32`、`MoreLoaderCRT`，以及 `tools/driver/main.cpp` 产出的可执行文件 `moreloader`。
+- 一个模块 `moreloader`（命名空间 `more::loader`；模拟 msvcrt 与 Windows 语义的代码位于 `more::loader::msvcrt` 与 `more::loader::winapi`），由若干静态子库与一个薄驱动组成：`MoreLoaderSupport`、`MoreLoaderImage`、`MoreLoaderRuntime`、`MoreLoaderWinAPI`、`MoreLoaderCRT`，以及 `tools/driver/main.cpp` 产出的可执行文件 `moreloader`。
 - 模块包含一个 `include/` 和一个 `lib/`：`moreloader/include/moreloader/Image/PEFile.h` 对应 `moreloader/lib/Image/PEFile.cpp`。include 的命名空间是模块名，写 `<moreloader/Image/PEFile.h>`。私有头文件与源文件放在一起，加 `_p.h` 后缀，尽量少用。
 - **缩写词全大写**（`PEFile`、`threadID`、`loadFS`、`MoreLoaderCRT`），位于小驼峰名字开头时全小写（`teb()`）；逐字对应 Windows API 与 SDK 的名字保留原拼写（`kernel32_GetCurrentProcessId`、`TEB32::TlsSlots`）。
 - 文件名、类型名采用大驼峰；函数、参数、变量、命名空间采用小驼峰；枚举成员采用大驼峰；私有数据成员使用 `m_` 前缀；常量使用小驼峰。**唯一的例外是客体可见的包装函数**，命名为 `<dll>_<导出名>`（如 `kernel32_GetLastError`、`msvcrt_fopen`），以便与导入表直接对照检索。

@@ -7,6 +7,16 @@
 #include <string_view>
 #include <vector>
 
+/// Adds the wrapper \c library_name to \a registry as the export \a name of \a library. The
+/// wrapper must be named after the export, which this macro enforces.
+#define MORE_REGISTER(registry, library, name)                                                     \
+    (registry).add(#library, #name, reinterpret_cast<void *>(&library##_##name))
+
+/// Adds the variable \c library_name to \a registry as the data export \a name of \a library.
+#define MORE_REGISTER_DATA(registry, library, name)                                                \
+    (registry).add(#library, #name, reinterpret_cast<void *>(&library##_##name),                  \
+                   ::more::loader::ExportKind::Data)
+
 namespace more::loader {
 
     /// Kind of an export. Only functions receive trace thunks, because a data import is read
