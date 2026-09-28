@@ -1,5 +1,8 @@
 #include "KernelObjects.h"
 
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <chrono>
 #include <condition_variable>
 
@@ -197,6 +200,24 @@ namespace more::loader {
     // ---------------------------------------------------------------------------------------
 
     FileObject::FileObject(int descriptor) : m_descriptor(descriptor) {
+    }
+
+    FileObject::~FileObject() {
+        if (m_lockDescriptor >= 0 && m_lockDescriptor != m_descriptor) {
+            ::close(m_lockDescriptor);
+        }
+    }
+
+    int FileObject::lockDescriptor() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_lockDescriptor < 0) {
+            std::string path = "/proc/self/fd/" + std::to_string(m_descriptor);
+            m_lockDescriptor = ::open(path.c_str(), O_RDWR | O_CLOEXEC);
+            if (m_lockDescriptor < 0) {
+                m_lockDescriptor = m_descriptor;
+            }
+        }
+        return m_lockDescriptor;
     }
 
     KernelObject::Type FileObject::type() const {

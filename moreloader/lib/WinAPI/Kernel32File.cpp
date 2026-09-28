@@ -15,6 +15,7 @@
 #include <moreloader/Runtime/GuestThread.h>
 #include <moreloader/Runtime/KernelObjects.h>
 #include <moreloader/Support/CodePage.h>
+#include <moreloader/Support/Diagnostics.h>
 #include <moreloader/Support/PathMapping.h>
 
 namespace more::loader::winapi {
@@ -139,9 +140,13 @@ namespace more::loader::winapi {
             lock.l_len = off_t(length);
             lock.l_pid = 0;
             int command = type == F_UNLCK ? F_OFD_SETLK : (wait ? F_OFD_SETLKW : F_OFD_SETLK);
-            while (::fcntl(file->descriptor(), command, &lock) != 0) {
+            while (::fcntl(file->lockDescriptor(), command, &lock) != 0) {
                 if (errno == EINTR) {
                     continue;
+                }
+                if (isDiagnosticEnabled(DiagnosticCategory::Stubs)) {
+                    diagnostic("fcntl lock type %d of descriptor %d failed: %s", int(type),
+                               file->lockDescriptor(), std::strerror(errno));
                 }
                 setLastError(type == F_UNLCK ? ErrorNotLocked : ErrorLockViolation);
                 return FALSE;

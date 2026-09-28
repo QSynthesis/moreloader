@@ -145,12 +145,27 @@ namespace more::loader {
 
         Type type() const override;
 
+        ~FileObject();
+
         inline int descriptor() const {
             return m_descriptor;
         }
 
+        /// Returns a descriptor of the same file for byte-range locks.
+        ///
+        /// Windows grants shared and exclusive locks on a handle regardless of its access, while
+        /// \c fcntl requires a readable descriptor for a shared lock and a writable one for an
+        /// exclusive lock. moresampler locks a file that it opened for writing only. The
+        /// descriptor is therefore a separate descriptor opened for reading and writing on first
+        /// use, or the original descriptor if the file cannot be opened so. Locks of an open file
+        /// description conflict with those of other descriptions as Windows locks conflict with
+        /// those of other handles.
+        int lockDescriptor();
+
     private:
         int m_descriptor;
+        int m_lockDescriptor = -1;
+        std::mutex m_mutex;
     };
 
     /// The state of a directory enumeration of \c FindFirstFileW.
