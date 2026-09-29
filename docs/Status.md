@@ -39,4 +39,10 @@ UTAU 自带的 `resampler.exe`（作者 2026-09-29 决定支持）：
 
 - 环境：`ssh spark`（aarch64），FEX 位于 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`。
 - [x] 定位 FEX 下的 SIGILL：FEX 对 32 位客体的 `modify_ldt` 是中止进程的桩。FS 段改用 `set_thread_area` 的 GDT TLS 项后，频率表生成、resampler 与 wavtool 的 13 个文件与 Windows 逐字节一致，多线程合成同样一致，见 [`20260929-fex.md`](20260929-fex.md)
-- [ ] box64（BOX32）的对照
+
+RISC-V（`ssh dp1000`，riscv64），见 [`20260929-riscv.md`](20260929-riscv.md)：
+
+- [x] box64（BOX32）：需要动态链接的加载器（`MORE_STATIC=OFF`）与 `BOX64_DYNAREC_FASTROUND=0`；resampler 全部一致，moresampler 因 box64 以 double 模拟 x87 而大量不同，差异源已定位到指令
+- [x] qemu-i386：静态链接的加载器可直接运行；moresampler 仅 `bam.wav` 的两个文件不同，原因为 `fsin`、`fcos`、`fsincos`、`fptan` 以 double 计算
+- [x] qemu-i386 加 binary128 超越函数的补丁：两个程序全部逐字节一致。作者决定采用该方案，补丁以 v11.1.2 为基线保存在 [`third-party/qemu/`](../third-party/qemu/README.md)
+- [x] 诊断选项 `--check-heap`（msvcrt 堆的越界检查）
