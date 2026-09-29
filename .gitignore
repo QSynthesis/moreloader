@@ -45,5 +45,9 @@ CMakeSettings.json
 # moresampler forbids distributing it as part of this project.
 /work/
 
+# Pseudo-code exported from the Ghidra project of moresampler. It is derived from moresampler and
+# serves only as a local cache.
+/decomp/
+
 # Python bytecode of the scripts.
 __pycache__/
