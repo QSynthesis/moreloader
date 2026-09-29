@@ -125,6 +125,7 @@ moresampler 静态链接了大量库，这些库不是逆向对象。识别之�
 | msvcrt 导入的跳转桩（`jmp [iat]`） | `imp_` | 导入表 |
 | winpthreads | `pthread_` | mingw-w64 的 winpthreads 源码 |
 | libgcc（`__udivdi3`、`__umoddi3`、DWARF 注册等） | `gcc_` | libgcc 源码 |
+| libgomp（OpenMP 运行库，`omp_*`、`GOMP_*`、`gomp_*`） | `gomp_` | GCC 的 libgomp 源码（`config/mingw32/proc.c` 等）；exe 中的 `OMP_NUM_THREADS` 等字符串。已识别的函数见 [`20260929-openmp-evidence.md`](claude/20260929-openmp-evidence.md) |
 | Lua（oto 生成模式使用） | `lua_` | readme 0.7.2 的更新记录；`setlocale`、`system`、`signal` 等导入的调用者 |
 | libllsm、libpyin、libgvps、liblrhsmm、WORLD、ciglet 等 | `llsm_`、`pyin_`、`gvps_`、`lrhsmm_`、`world_`、`ciglet_` | `work/moresampler/docs/` 中的许可证与各库的公开源码 |
 
