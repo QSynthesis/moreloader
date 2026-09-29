@@ -1,5 +1,5 @@
 diff --git a/target/i386/tcg/fpu_helper.c b/target/i386/tcg/fpu_helper.c
-index 58e46d8f5f68..be76c41b6bb3 100644
+index 58e46d8f5f68..74c2b00cb97b 100644
 --- a/target/i386/tcg/fpu_helper.c
 +++ b/target/i386/tcg/fpu_helper.c
 @@ -18,6 +18,7 @@
@@ -10,15 +10,18 @@ index 58e46d8f5f68..be76c41b6bb3 100644
  #include <math.h>
  #include "cpu.h"
  #include "tcg-cpu.h"
-@@ -1300,6 +1301,36 @@ void helper_f2xm1(CPUX86State *env)
+@@ -1300,6 +1301,75 @@ void helper_f2xm1(CPUX86State *env)
      merge_exception_flags(env, old_flags);
  }
  
 +/*
 + * FSIN, FCOS, FSINCOS and FPTAN compute their results with the full 64-bit significand of the
-+ * operand and deliver a 64-bit significand regardless of the precision control. They are
-+ * evaluated here in the binary128 long double of the host, into which a floatx80 converts
-+ * exactly, and rounded to the nearest floatx80.
++ * operand and deliver a 64-bit significand regardless of the precision control. The processor
++ * reduces the operand by a multiple of pi/2 rounded to 66 bits, and near a zero of the function
++ * that constant, not pi, determines the result. The reduction is performed here with the same
++ * constant and a single rounding, the reduced operand is evaluated in the binary128 long double
++ * of the host, into which a floatx80 converts exactly, and the result is rounded to the nearest
++ * floatx80.
 + */
 +QEMU_BUILD_BUG_ON(sizeof(long double) != 16 || LDBL_MANT_DIG != 113);
 +
@@ -44,48 +47,84 @@ index 58e46d8f5f68..be76c41b6bb3 100644
 +    return float128_to_floatx80(q, &status);
 +}
 +
++/* Returns x - k * pi/2 for the nearest integer k, and k modulo 4 in *quadrant. */
++static long double x87_reduce(long double x, int *quadrant)
++{
++    /* pi/2 rounded to 66 bits: the significand c90fdaa22168c234 followed by the bits 11. */
++    const long double half_pi =
++        ldexpl((long double)0xc90fdaa22168c234ULL, -63) + ldexpl(3.0L, -65);
++    long double k = nearbyintl(x / half_pi);
++
++    *quadrant = (int)((long long)k & 3);
++    return fmal(-k, half_pi, x);
++}
++
++static long double x87_sin(long double x)
++{
++    int q;
++    long double r = x87_reduce(x, &q);
++
++    return q == 0 ? sinl(r) : q == 1 ? cosl(r) : q == 2 ? -sinl(r) : -cosl(r);
++}
++
++static long double x87_cos(long double x)
++{
++    int q;
++    long double r = x87_reduce(x, &q);
++
++    return q == 0 ? cosl(r) : q == 1 ? -sinl(r) : q == 2 ? -cosl(r) : sinl(r);
++}
++
++static long double x87_tan(long double x)
++{
++    int q;
++    long double r = x87_reduce(x, &q);
++
++    return (q & 1) ? -cosl(r) / sinl(r) : tanl(r);
++}
++
  void helper_fptan(CPUX86State *env)
  {
      double fptemp = floatx80_to_double(env, ST0);
-@@ -1307,8 +1338,7 @@ void helper_fptan(CPUX86State *env)
+@@ -1307,8 +1377,7 @@ void helper_fptan(CPUX86State *env)
      if ((fptemp > MAXTAN) || (fptemp < -MAXTAN)) {
          env->fpus |= 0x400;
      } else {
 -        fptemp = tan(fptemp);
 -        ST0 = double_to_floatx80(env, fptemp);
-+        ST0 = quad_to_x87(tanl(x87_to_quad(ST0)));
++        ST0 = quad_to_x87(x87_tan(x87_to_quad(ST0)));
          fpush(env);
          ST0 = floatx80_one;
          env->fpus &= ~0x400; /* C2 <-- 0 */
-@@ -2327,9 +2357,11 @@ void helper_fsincos(CPUX86State *env)
+@@ -2327,9 +2396,11 @@ void helper_fsincos(CPUX86State *env)
      if ((fptemp > MAXTAN) || (fptemp < -MAXTAN)) {
          env->fpus |= 0x400;
      } else {
 -        ST0 = double_to_floatx80(env, sin(fptemp));
 +        long double x = x87_to_quad(ST0);
 +
-+        ST0 = quad_to_x87(sinl(x));
++        ST0 = quad_to_x87(x87_sin(x));
          fpush(env);
 -        ST0 = double_to_floatx80(env, cos(fptemp));
-+        ST0 = quad_to_x87(cosl(x));
++        ST0 = quad_to_x87(x87_cos(x));
          env->fpus &= ~0x400;  /* C2 <-- 0 */
          /* the above code is for |arg| < 2**63 only */
      }
-@@ -2400,7 +2432,7 @@ void helper_fsin(CPUX86State *env)
+@@ -2400,7 +2471,7 @@ void helper_fsin(CPUX86State *env)
      if ((fptemp > MAXTAN) || (fptemp < -MAXTAN)) {
          env->fpus |= 0x400;
      } else {
 -        ST0 = double_to_floatx80(env, sin(fptemp));
-+        ST0 = quad_to_x87(sinl(x87_to_quad(ST0)));
++        ST0 = quad_to_x87(x87_sin(x87_to_quad(ST0)));
          env->fpus &= ~0x400;  /* C2 <-- 0 */
          /* the above code is for |arg| < 2**53 only */
      }
-@@ -2413,7 +2445,7 @@ void helper_fcos(CPUX86State *env)
+@@ -2413,7 +2484,7 @@ void helper_fcos(CPUX86State *env)
      if ((fptemp > MAXTAN) || (fptemp < -MAXTAN)) {
          env->fpus |= 0x400;
      } else {
 -        ST0 = double_to_floatx80(env, cos(fptemp));
-+        ST0 = quad_to_x87(cosl(x87_to_quad(ST0)));
++        ST0 = quad_to_x87(x87_cos(x87_to_quad(ST0)));
          env->fpus &= ~0x400;  /* C2 <-- 0 */
          /* the above code is for |arg| < 2**63 only */
      }
