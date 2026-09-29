@@ -26,7 +26,7 @@ moreloader 是不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，�
 - **构建在 WSL 中进行**（`Ubuntu-24.04`，GCC 13）。加载器必须是 32 位 x86 Linux 程序，配置时指定 `-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/linux-i386.cmake`。
 - WSL 与 overworld 均未安装 `gcc-multilib`，`sudo` 需要密码。`scripts/fetch-i386-overlay.sh` 在无管理员权限的情况下把 32 位 glibc 与 libgcc 解包到 `~/.local/share/moreloader-i386`，配置时以 `-DMORE_I386_OVERLAY=<目录>` 传入。安装了 `gcc-multilib` 的系统不需要该目录。overlay 中的动态链接程序在本机缺少 `/lib/ld-linux.so.2`，无法运行，因此在构建机上运行的程序一律静态链接。
 - 加载器默认静态链接（`MORE_STATIC`），运行时不需要任何 32 位库。
-- **依赖**：构建系统使用 qmsetup（与 HelloUtau 相同），基础设施使用 stdcorelib，自动测试使用 Boost.Test（与 stdcorelib 相同）。三者都必须是 32 位版本，由 `scripts/build-i386-deps.sh <qmsetup 源码目录> <stdcorelib 源码目录>` 编译并安装到 `~/.local/opt/moreloader-i386`：qmsetup 取自 `D:\GitHub\qmsetup`，其 `qmcorecmd` 静态链接；stdcorelib 取自 `D:\GitHub\stdcorelib`，为静态库；Boost.Test 为 1.83 的静态库。WSL 中这两个目录为 `/mnt/d/GitHub/...`。不要使用系统的 64 位版本，它们的包配置文件会以指针宽度不符为由被 CMake 拒绝。
+- **依赖**：构建系统使用 qmsetup（与 HelloUtau 相同），自动测试使用 Boost.Test（组织方式与 stdcorelib 相同）。二者都必须是 32 位版本，由 `scripts/build-i386-deps.sh <qmsetup 源码目录>` 编译并安装到 `~/.local/opt/moreloader-i386`：qmsetup 取自 `D:\GitHub\qmsetup`（WSL 中为 `/mnt/d/GitHub/qmsetup`），其 `qmcorecmd` 静态链接；Boost.Test 为 1.83 的静态库。不依赖 stdcorelib（作者 2026-09-29 决定移除，原先只用于 UTF-16 到 UTF-8 的转换）。不要使用系统的 64 位版本，它们的包配置文件会以指针宽度不符为由被 CMake 拒绝。
 - 构建命令：
 
 ```sh
@@ -34,7 +34,6 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/linux-i386.cmake \
     -DMORE_I386_OVERLAY=$HOME/.local/share/moreloader-i386 \
     -Dqmsetup_DIR=$HOME/.local/opt/moreloader-i386/lib/cmake/qmsetup \
-    -Dstdcorelib_DIR=$HOME/.local/opt/moreloader-i386/lib/cmake/stdcorelib \
     -DBoost_DIR=$HOME/.local/opt/moreloader-i386/lib/cmake/Boost-1.83.0 \
     -DMORE_BUILD_TESTS=ON
 cmake --build build
@@ -84,7 +83,6 @@ ctest --test-dir build --no-tests=error
 - 模块包含一个 `include/` 和一个 `lib/`：`moreloader/include/moreloader/Image/PEFile.h` 对应 `moreloader/lib/Image/PEFile.cpp`。include 的命名空间是模块名，写 `<moreloader/Image/PEFile.h>`。私有头文件与源文件放在一起，加 `_p.h` 后缀，尽量少用。
 - **缩写词全大写**（`PEFile`、`threadID`、`loadFS`、`MoreLoaderCRT`），位于小驼峰名字开头时全小写（`teb()`）；逐字对应 Windows API 与 SDK 的名字保留原拼写（`kernel32_GetCurrentProcessId`、`TEB32::TlsSlots`）。
 - 文件名、类型名采用大驼峰；函数、参数、变量、命名空间采用小驼峰；枚举成员采用大驼峰；私有数据成员使用 `m_` 前缀；常量使用小驼峰。**唯一的例外是客体可见的包装函数**，命名为 `<dll>_<导出名>`（如 `kernel32_GetLastError`、`msvcrt_fopen`），以便与导入表直接对照检索。
-- **基础设施优先使用 stdcorelib**（UTF 转换 `stdc::utf`、字符串工具 `stdc::str` 等），作为各子库的私有依赖。stdcorelib 的行为与 Windows 不一致之处（例如 `stdc::system::split_command_line` 不按 `CommandLineToArgvW` 的反斜杠规则）不能用于模拟 Windows 的语义。
 - 可能不存在结果的函数返回 `std::optional<T>`，不要使用「bool 加输出参数」，也不要用某个特定值表示「不存在」。模拟 Windows API 的包装函数保持 Windows 的返回约定。
 - **编译器相关的属性一律经由 `<moreloader/Support/MoreLoaderSupportGlobal.h>` 中的宏书写**（`MORE_WINAPI`、`MORE_CDECL`、`MORE_PRINTF_FORMAT` 等），不直接写 `__attribute__`、`__declspec` 或 `__builtin_*`，使源码在 MSVC 下同样可以解析。
 - 头文件中实现的函数一律显式写出 `inline`；初始化表达式为指针时写 `auto name = ...`；析构函数不写 `override`，头文件中被继承的类不写 `final`；命名空间结束处不添加注释。

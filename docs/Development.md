@@ -10,7 +10,7 @@
 
 | 模块 | 命名空间 | 产出 | 依赖 |
 |---|---|---|---|
-| `moreloader/` | `more::loader` | 静态子库 `MoreLoaderSupport` 等，以及可执行文件 `moreloader` | C++17 标准库、glibc（i386，静态链接）、stdcorelib（私有） |
+| `moreloader/` | `more::loader` | 静态子库 `MoreLoaderSupport` 等，以及可执行文件 `moreloader` | C++17 标准库、glibc（i386，静态链接） |
 
 `more` 仅作为外层命名空间，代码一律位于第二层。不要在 `more` 中直接声明内容，也不要再增加第三层。
 
@@ -31,7 +31,7 @@
 
 `MoreLoaderWinAPI` 与 `MoreLoaderCRT` 互不依赖，二者共同需要的设施（句柄、线程、errno 以外的每线程状态）位于 `MoreLoaderRuntime`。它们对外只公开注册函数，以及为测试而公开的纯计算部分（例如 printf 的格式化引擎）。
 
-**基础设施优先使用 stdcorelib**，与 HelloUtau 相同，作为子库的私有依赖（`LINKS_PRIVATE stdcorelib::stdcorelib`），不出现在公开头文件中。stdcorelib 为通用目的设计，其行为与 Windows 不一致之处不能用于模拟 Windows 的语义，例如 `stdc::system::split_command_line` 不按 `CommandLineToArgvW` 的反斜杠规则拆分。
+**不依赖 stdcorelib**（作者 2026-09-29 决定）。HelloUtau 以 stdcorelib 为基础设施；本仓库需要的基础设施只有 Windows 语义的编码转换、命令行拆分与路径映射，其规则都与通用实现不同，在 `MoreLoaderSupport` 中自行实现。
 
 ## 目录与文件
 
@@ -182,6 +182,6 @@ CMake 中判断平台而非编译器。
 | 目标平台 | Windows、macOS、Linux，64 位 | 仅 32 位 x86 Linux | 客体是由处理器直接执行的 32 位代码，与加载器共享地址空间与调用约定 |
 | 子库类型 | 动态库，`<目标名>Global.h` 中有导出宏 | 静态库，`<目标名>Global.h` 中只有编译器属性的宏 | 子库只链接进单个可执行文件，加载器以静态链接分发 |
 | 测试框架 | QtTest，每个测试文件一个程序 | Boost.Test，一个程序 | 本仓库不依赖 Qt，32 位构建环境中也没有 Qt；做法与 stdcorelib 相同 |
-| 依赖的获取 | vcpkg 或分别安装 | `scripts/build-i386-deps.sh` 编译 qmsetup、stdcorelib 与 Boost.Test 的 32 位版本 | 系统与 vcpkg 提供的是 64 位版本 |
+| 依赖的获取 | vcpkg 或分别安装 | `scripts/build-i386-deps.sh` 编译 qmsetup 与 Boost.Test 的 32 位版本 | 系统与 vcpkg 提供的是 64 位版本 |
 | 客体可见的名字 | 无 | 包装函数 `<dll>_<导出名>`，结构体沿用 Windows SDK 的拼写 | 须能以 Windows 的名字直接检索 |
 | 返回约定 | 一律 `std::optional` | 包装函数保持 Windows 的约定 | 返回约定是被模拟的接口的一部分 |

@@ -4,7 +4,7 @@
 
 | 部分 | 状态 |
 |---|---|
-| 构建环境 | 32 位工具链文件、无管理员权限的 i386 overlay、32 位 qmsetup、stdcorelib 与 Boost.Test，见 [`20260928-repo-setup.md`](claude/20260928-repo-setup.md) |
+| 构建环境 | 32 位工具链文件、无管理员权限的 i386 overlay、32 位 qmsetup 与 Boost.Test，见 [`20260928-repo-setup.md`](claude/20260928-repo-setup.md) |
 | 指导文档 | `CLAUDE.md`、[`Development.md`](Development.md)、[`ReverseGuide.md`](ReverseGuide.md)、[`TaskSpec.md`](TaskSpec.md) |
 | 逆向 | Ghidra 工程已建立，bridge 可用；导入函数的调用点、文件打开模式与 `sinh` 的调用点已统计 |
 | msvcrt 实测 | 探针 `moreloader/tests/probe/msvcrt` 与黄金数据，结论见 [`20260928-msvcrt-measurements.md`](claude/20260928-msvcrt-measurements.md) |
@@ -24,7 +24,8 @@
 - [x] 驱动运行到 `main`
 - [x] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）：逐字节一致，见 [`20260929-first-comparison.md`](claude/20260929-first-comparison.md)
 - [x] 单个音符的渲染（resampler 模式）：逐字节一致
-- [ ] 真实工程的完整渲染：helloutau 生成成对的批处理与 shell 脚本，逐步比较采样
+- [x] 真实工程的完整渲染：helloutau 生成成对的批处理与 shell 脚本，逐步比较采样。修正以 `/` 开头的音高曲线被当作路径的缺陷后，203 步与最终 wav 全部一致，见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md)
+- [ ] 渲染比较的其余三种 `moreconfig.txt` 组合，以及 FEX 与 qemu-i386 上的同一工程
 - [ ] wavtool 模式的比较
 - [ ] 若比较因 `0x433836` 处 `sinh` 的 80 位结果不一致，按 msvcrt 的 x87 算法复现 `sinh`
 - [ ] README 的构建、用法与许可证说明
