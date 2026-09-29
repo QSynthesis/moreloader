@@ -111,4 +111,16 @@ namespace more::loader {
         return result;
     }
 
+    std::size_t wholeCharacterPrefix(std::string_view text, std::size_t limit) {
+        if (limit >= text.size()) {
+            return text.size();
+        }
+        // The byte at the limit is the first byte that does not fit. The prefix ends before the
+        // character that this byte belongs to.
+        std::size_t length = limit;
+        while (length > 0 && isContinuation(static_cast<std::uint8_t>(text[length]))) {
+            --length;
+        }
+        return length;
+    }
 }

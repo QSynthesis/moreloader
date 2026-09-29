@@ -32,6 +32,16 @@ namespace more::loader {
     /// surrogate is replaced with U+FFFD.
     Conversion<std::string> wideToMultiByte(std::u16string_view text);
 
+    /// Returns the length of the longest prefix of the UTF-8 text \a text that has at most
+    /// \a limit bytes and ends at a character boundary.
+    ///
+    /// \c WideCharToMultiByte fills a buffer that is too small with this prefix before it
+    /// fails, as measured. The C runtime of Visual C++ 6 relies on the prefix when it builds its
+    /// case mapping tables for UTF-8.
+    ///
+    /// \sa moreloader/tests/auto/data/msvcrt/nls.txt
+    std::size_t wholeCharacterPrefix(std::string_view text, std::size_t limit);
+
 }
 
 #endif // MORELOADER_SUPPORT_CODEPAGE_H

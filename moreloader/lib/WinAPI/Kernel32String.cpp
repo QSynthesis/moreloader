@@ -56,6 +56,10 @@ namespace more::loader::winapi {
                 return std::int32_t(required);
             }
             if (required > std::size_t(outputLength)) {
+                // Windows fills the buffer before it fails, even with half of a surrogate pair,
+                // as measured.
+                std::memcpy(output, result.text.data(),
+                            std::size_t(outputLength) * sizeof(char16_t));
                 setLastError(ErrorInsufficientBuffer);
                 return 0;
             }
@@ -98,6 +102,9 @@ namespace more::loader::winapi {
                 return std::int32_t(required);
             }
             if (required > std::size_t(outputLength)) {
+                // Windows writes the whole characters that fit before it fails, as measured.
+                std::memcpy(output, result.text.data(),
+                            wholeCharacterPrefix(result.text, std::size_t(outputLength)));
                 setLastError(ErrorInsufficientBuffer);
                 return 0;
             }
