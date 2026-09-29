@@ -14,7 +14,12 @@ namespace more::loader::winapi {
             case EACCES:
             case EPERM:
             case EROFS:
+            case EISDIR:
                 return ErrorAccessDenied;
+            case EEXIST:
+                return ErrorFileExists;
+            case ENOSPC:
+                return ErrorDiskFull;
             case EBADF:
                 return ErrorInvalidHandle;
             case ENOMEM:
@@ -39,6 +44,8 @@ namespace more::loader {
         registerKernel32Sync(registry);
         registerKernel32Thread(registry);
         registerKernel32File(registry);
+        registerKernel32FileIO(registry);
+        registerKernel32Environment(registry);
         registerKernel32String(registry);
         registerShell32(registry);
         registerShlwapi(registry);

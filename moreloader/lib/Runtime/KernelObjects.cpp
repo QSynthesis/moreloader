@@ -199,12 +199,15 @@ namespace more::loader {
     // FileObject, FindObject
     // ---------------------------------------------------------------------------------------
 
-    FileObject::FileObject(int descriptor) : m_descriptor(descriptor) {
+    FileObject::FileObject(int descriptor, bool owned) : m_descriptor(descriptor), m_owned(owned) {
     }
 
     FileObject::~FileObject() {
         if (m_lockDescriptor >= 0 && m_lockDescriptor != m_descriptor) {
             ::close(m_lockDescriptor);
+        }
+        if (m_owned) {
+            ::close(m_descriptor);
         }
     }
 

@@ -30,6 +30,12 @@ namespace more::loader::winapi {
 
         constexpr std::int32_t exceptionContinueSearch = 0;
 
+        constexpr DWORD windowsMajorVersion = 6;
+        constexpr DWORD windowsMinorVersion = 2;
+        constexpr DWORD windowsBuild = 9200;
+        constexpr DWORD platformWin32NT = 2;
+        constexpr DWORD osVersionInfoExSize = 156;
+
         std::atomic<std::uint32_t> s_unhandledExceptionFilter{0};
 
         std::mutex s_vectoredMutex;
@@ -85,33 +91,101 @@ namespace more::loader::winapi {
 
         // -----------------------------------------------------------------------------------
 
+        // Copies the guest path of the executable as GetModuleFileNameA and
+        // GetModuleFileNameW do.
+        template <class Char>
+        DWORD copyModulePath(HANDLE module, const std::basic_string<Char> &path, Char *buffer,
+                             DWORD size) {
+            if (module != 0 && module != process().image().base()) {
+                setLastError(ErrorModuleNotFound);
+                return 0;
+            }
+            if (size == 0) {
+                setLastError(ErrorInsufficientBuffer);
+                return 0;
+            }
+            if (path.size() < size) {
+                std::memcpy(buffer, path.c_str(), (path.size() + 1) * sizeof(Char));
+                setLastError(ErrorSuccess);
+                return DWORD(path.size());
+            }
+            std::memcpy(buffer, path.c_str(), (size - 1) * sizeof(Char));
+            buffer[size - 1] = 0;
+            setLastError(ErrorInsufficientBuffer);
+            return size;
+        }
+
+        // -----------------------------------------------------------------------------------
+
         char16_t *MORE_WINAPI kernel32_GetCommandLineW() {
             return const_cast<char16_t *>(process().commandLine().c_str());
+        }
+
+        /// Returns the command line in UTF-8, the ANSI code page of the guest.
+        char *MORE_WINAPI kernel32_GetCommandLineA() {
+            return const_cast<char *>(process().narrowCommandLine().c_str());
         }
 
         /// Copies the guest path of the executable. A buffer that is too small receives the
         /// truncated path with a terminator, and the function returns \a size and sets
         /// \c ERROR_INSUFFICIENT_BUFFER, as Windows Vista and later do.
         DWORD MORE_WINAPI kernel32_GetModuleFileNameW(HANDLE module, char16_t *buffer, DWORD size) {
-            Process &p = process();
-            if (module != 0 && module != p.image().base()) {
-                setLastError(ErrorModuleNotFound);
-                return 0;
-            }
-            const std::u16string &path = p.modulePath();
-            if (size == 0) {
+            return copyModulePath(module, process().modulePath(), buffer, size);
+        }
+
+        /// Copies the guest path of the executable in UTF-8, with the truncation of
+        /// GetModuleFileNameW.
+        DWORD MORE_WINAPI kernel32_GetModuleFileNameA(HANDLE module, char *buffer, DWORD size) {
+            static const std::string path = wideToMultiByte(process().modulePath()).text;
+            return copyModulePath(module, path, buffer, size);
+        }
+
+        /// Returns the version that Windows 8 and later report to an executable without a
+        /// compatibility manifest: 6.2, build 9200, platform NT. The C runtime of Visual C++ 6
+        /// selects the heap of the system for Windows NT 5 and later.
+        DWORD MORE_WINAPI kernel32_GetVersion() {
+            return (DWORD(windowsBuild) << 16) | (windowsMinorVersion << 8) | windowsMajorVersion;
+        }
+
+        BOOL MORE_WINAPI kernel32_GetVersionExA(OSVERSIONINFOA32 *info) {
+            if (info->dwOSVersionInfoSize != sizeof(OSVERSIONINFOA32) &&
+                info->dwOSVersionInfoSize != osVersionInfoExSize) {
                 setLastError(ErrorInsufficientBuffer);
+                return FALSE;
+            }
+            std::uint32_t size = info->dwOSVersionInfoSize;
+            std::memset(info, 0, size);
+            info->dwOSVersionInfoSize = size;
+            info->dwMajorVersion = windowsMajorVersion;
+            info->dwMinorVersion = windowsMinorVersion;
+            info->dwBuildNumber = windowsBuild;
+            info->dwPlatformId = platformWin32NT;
+            return TRUE;
+        }
+
+        /// Returns the handle of an emulated library, or NULL with \c ERROR_MOD_NOT_FOUND. The
+        /// C runtime of Visual C++ 6 loads \c user32.dll only to report a fatal error.
+        HANDLE MORE_WINAPI kernel32_LoadLibraryA(const char *name) {
+            if (!name) {
+                setLastError(ErrorInvalidParameter);
                 return 0;
             }
-            if (path.size() < size) {
-                std::memcpy(buffer, path.c_str(), (path.size() + 1) * sizeof(char16_t));
-                setLastError(ErrorSuccess);
-                return DWORD(path.size());
+            std::string narrow(name);
+            HANDLE handle = moduleHandleForName(&narrow);
+            if (!handle && isDiagnosticEnabled(DiagnosticCategory::Stubs)) {
+                diagnostic("LoadLibraryA(\"%s\") returns NULL", name);
             }
-            std::memcpy(buffer, path.c_str(), (size - 1) * sizeof(char16_t));
-            buffer[size - 1] = 0;
-            setLastError(ErrorInsufficientBuffer);
-            return size;
+            return handle;
+        }
+
+        BOOL MORE_WINAPI kernel32_FreeLibrary(HANDLE module) {
+            return TRUE;
+        }
+
+        /// Exits the process as \c ExitProcess does. The C runtime of the guest has run its
+        /// exit handlers and flushed its streams before.
+        void MORE_WINAPI kernel32_ExitProcess(DWORD exitCode) {
+            process().exit(exitCode);
         }
 
         HANDLE MORE_WINAPI kernel32_GetModuleHandleA(const char *name) {
@@ -261,8 +335,15 @@ namespace more::loader::winapi {
     }
 
     void registerKernel32Process(ExportRegistry &registry) {
+        MORE_REGISTER(registry, kernel32, GetCommandLineA);
         MORE_REGISTER(registry, kernel32, GetCommandLineW);
+        MORE_REGISTER(registry, kernel32, GetModuleFileNameA);
         MORE_REGISTER(registry, kernel32, GetModuleFileNameW);
+        MORE_REGISTER(registry, kernel32, GetVersion);
+        MORE_REGISTER(registry, kernel32, GetVersionExA);
+        MORE_REGISTER(registry, kernel32, LoadLibraryA);
+        MORE_REGISTER(registry, kernel32, FreeLibrary);
+        MORE_REGISTER(registry, kernel32, ExitProcess);
         MORE_REGISTER(registry, kernel32, GetModuleHandleA);
         MORE_REGISTER(registry, kernel32, GetModuleHandleW);
         MORE_REGISTER(registry, kernel32, GetProcAddress);

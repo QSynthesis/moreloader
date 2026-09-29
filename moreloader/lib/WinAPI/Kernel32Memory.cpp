@@ -1,8 +1,10 @@
 #include "WinAPI_p.h"
 
+#include <malloc.h>
 #include <sys/mman.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <moreloader/Image/MappedImage.h>
@@ -25,6 +27,11 @@ namespace more::loader::winapi {
         };
 
         constexpr std::uint32_t pageSize = 0x1000;
+
+        // The handle of every heap. It is an address that no mapping occupies.
+        constexpr HANDLE heapHandle = 0x7D000000;
+
+        constexpr DWORD heapReallocInPlaceOnly = 0x10;
 
         DWORD protectionOfPermissions(const char *permissions) {
             bool read = permissions[0] == 'r';
@@ -151,11 +158,66 @@ namespace more::loader::winapi {
             return TRUE;
         }
 
+        /// Returns a handle for a heap. All heaps of the guest share the allocator of the host,
+        /// therefore the handle only identifies the heap in later calls.
+        HANDLE MORE_WINAPI kernel32_HeapCreate(DWORD options, DWORD initialSize,
+                                               DWORD maximumSize) {
+            return heapHandle;
+        }
+
+        /// Succeeds without releasing the blocks, which the host allocator keeps. The guest
+        /// destroys its heap only when it exits.
+        BOOL MORE_WINAPI kernel32_HeapDestroy(HANDLE heap) {
+            return TRUE;
+        }
+
+        /// Allocates a block that is filled with zeros regardless of \c HEAP_ZERO_MEMORY, so
+        /// that a guest that reads a block before writing it behaves the same on every run.
+        void *MORE_WINAPI kernel32_HeapAlloc(HANDLE heap, DWORD flags, DWORD size) {
+            void *block = std::calloc(1, size ? size : 1);
+            if (!block) {
+                setLastError(ErrorNotEnoughMemory);
+            }
+            return block;
+        }
+
+        BOOL MORE_WINAPI kernel32_HeapFree(HANDLE heap, DWORD flags, void *block) {
+            std::free(block);
+            return TRUE;
+        }
+
+        /// Resizes a block. The bytes added to a block are filled with zeros, as in HeapAlloc.
+        /// With \c HEAP_REALLOC_IN_PLACE_ONLY the block keeps its address or the call fails.
+        void *MORE_WINAPI kernel32_HeapReAlloc(HANDLE heap, DWORD flags, void *block, DWORD size) {
+            std::size_t oldSize = ::malloc_usable_size(block);
+            if (flags & heapReallocInPlaceOnly) {
+                if (size > oldSize) {
+                    setLastError(ErrorNotEnoughMemory);
+                    return nullptr;
+                }
+                return block;
+            }
+            auto resized = static_cast<char *>(std::realloc(block, size ? size : 1));
+            if (!resized) {
+                setLastError(ErrorNotEnoughMemory);
+                return nullptr;
+            }
+            std::size_t newSize = ::malloc_usable_size(resized);
+            if (newSize > oldSize) {
+                std::memset(resized + oldSize, 0, newSize - oldSize);
+            }
+            return resized;
+        }
     }
 
     void registerKernel32Memory(ExportRegistry &registry) {
         MORE_REGISTER(registry, kernel32, VirtualQuery);
         MORE_REGISTER(registry, kernel32, VirtualProtect);
+        MORE_REGISTER(registry, kernel32, HeapCreate);
+        MORE_REGISTER(registry, kernel32, HeapDestroy);
+        MORE_REGISTER(registry, kernel32, HeapAlloc);
+        MORE_REGISTER(registry, kernel32, HeapFree);
+        MORE_REGISTER(registry, kernel32, HeapReAlloc);
     }
 
 }

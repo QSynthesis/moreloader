@@ -27,11 +27,17 @@ namespace more::loader::winapi {
         ErrorNoMoreFiles = 18,
         ErrorLockViolation = 33,
         ErrorNotSupported = 50,
+        ErrorFileExists = 80,
         ErrorInvalidParameter = 87,
+        ErrorDiskFull = 112,
         ErrorInsufficientBuffer = 122,
+        ErrorInvalidName = 123,
         ErrorModuleNotFound = 126,
         ErrorProcedureNotFound = 127,
+        ErrorNegativeSeek = 131,
         ErrorNotLocked = 158,
+        ErrorAlreadyExists = 183,
+        ErrorEnvironmentVariableNotFound = 203,
         ErrorNoMoreItems = 259,
         ErrorTooManyPosts = 298,
         ErrorNoUnicodeTranslation = 1113,
@@ -47,6 +53,8 @@ namespace more::loader::winapi {
     void registerKernel32Sync(ExportRegistry &registry);
     void registerKernel32Thread(ExportRegistry &registry);
     void registerKernel32File(ExportRegistry &registry);
+    void registerKernel32FileIO(ExportRegistry &registry);
+    void registerKernel32Environment(ExportRegistry &registry);
     void registerKernel32String(ExportRegistry &registry);
     void registerShell32(ExportRegistry &registry);
     void registerShlwapi(ExportRegistry &registry);

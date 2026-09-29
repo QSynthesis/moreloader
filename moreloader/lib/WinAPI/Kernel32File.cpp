@@ -33,6 +33,11 @@ namespace more::loader::winapi {
             LockFileExclusiveLock = 0x2,
         };
 
+        enum DriveType : DWORD {
+            DriveNoRootDir = 1,
+            DriveFixed = 3,
+        };
+
         constexpr std::uint64_t fileTimeEpochOffset = 11644473600ull;
 
         char16_t upcase(char16_t c) {
@@ -154,13 +159,33 @@ namespace more::loader::winapi {
             return TRUE;
         }
 
-        // -----------------------------------------------------------------------------------
+        // Returns the current directory of the process in its guest form.
+        std::string currentGuestDirectory() {
+            char host[4096];
+            if (!::getcwd(host, sizeof host)) {
+                return "Z:\\";
+            }
+            return guestPathFromHost(host);
+        }
+
+        // Converts the description of an entry for FindFirstFileA. The name is UTF-8, the ANSI
+        // code page of the guest, and is truncated at a character boundary if it does not fit.
+        void narrowFindData(const WIN32_FIND_DATAW32 &wide, WIN32_FIND_DATAA32 *narrow) {
+            std::memset(narrow, 0, sizeof *narrow);
+            narrow->dwFileAttributes = wide.dwFileAttributes;
+            narrow->ftCreationTime = wide.ftCreationTime;
+            narrow->ftLastAccessTime = wide.ftLastAccessTime;
+            narrow->ftLastWriteTime = wide.ftLastWriteTime;
+            narrow->nFileSizeHigh = wide.nFileSizeHigh;
+            narrow->nFileSizeLow = wide.nFileSizeLow;
+            std::string name = wideToMultiByte(wide.cFileName).text;
+            std::memcpy(narrow->cFileName, name.data(),
+                        wholeCharacterPrefix(name, sizeof narrow->cFileName - 1));
+        }
 
         /// Enumerates a directory. The entries are collected at once and sorted in the order of
         /// NTFS, so that the guest sees the order that it sees on Windows.
-        HANDLE MORE_WINAPI kernel32_FindFirstFileW(const char16_t *pattern,
-                                                   WIN32_FIND_DATAW32 *data) {
-            std::u16string guest(pattern);
+        HANDLE findFirst(std::u16string guest, WIN32_FIND_DATAW32 *data) {
             std::size_t separator = guest.find_last_of(u"\\/");
             std::u16string directory =
                 separator == std::u16string::npos ? u"." : guest.substr(0, separator + 1);
@@ -203,6 +228,80 @@ namespace more::loader::winapi {
             }
         }
 
+        // -----------------------------------------------------------------------------------
+
+        /// Enumerates a directory in the order of NTFS.
+        HANDLE MORE_WINAPI kernel32_FindFirstFileW(const char16_t *pattern,
+                                                   WIN32_FIND_DATAW32 *data) {
+            return findFirst(pattern, data);
+        }
+
+        /// Enumerates a directory in the order of NTFS. The pattern is UTF-8, the ANSI code page
+        /// of the guest. \c _stat of Visual C++ 6 describes a file this way.
+        HANDLE MORE_WINAPI kernel32_FindFirstFileA(const char *pattern, WIN32_FIND_DATAA32 *data) {
+            WIN32_FIND_DATAW32 wide;
+            HANDLE handle = findFirst(multiByteToWide(pattern).text, &wide);
+            if (handle != INVALID_HANDLE_VALUE) {
+                narrowFindData(wide, data);
+            }
+            return handle;
+        }
+
+        BOOL MORE_WINAPI kernel32_FindClose(HANDLE handle) {
+            if (!handleTable().get<FindObject>(handle) || !handleTable().close(handle)) {
+                setLastError(ErrorInvalidHandle);
+                return FALSE;
+            }
+            return TRUE;
+        }
+
+        /// Copies the current directory in its guest form, such as <tt>Z:\\home\\user</tt>.
+        ///
+        /// \return the length without the terminator, or the size including the terminator
+        ///         if \a size is insufficient, as measured
+        DWORD MORE_WINAPI kernel32_GetCurrentDirectoryA(DWORD size, char *buffer) {
+            std::string guest = currentGuestDirectory();
+            if (!buffer || size <= guest.size()) {
+                return DWORD(guest.size() + 1);
+            }
+            std::memcpy(buffer, guest.c_str(), guest.size() + 1);
+            return DWORD(guest.size());
+        }
+
+        /// Returns the absolute guest path of \a name as measured on Windows.
+        ///
+        /// \return the length without the terminator, or the size including the terminator
+        ///         if \a size is insufficient, as measured
+        DWORD MORE_WINAPI kernel32_GetFullPathNameA(const char *name, DWORD size, char *buffer,
+                                                    char **filePart) {
+            if (!name || !*name) {
+                setLastError(ErrorInvalidName);
+                return 0;
+            }
+            FullGuestPath full = fullGuestPath(name, currentGuestDirectory());
+            if (!buffer || size <= full.path.size()) {
+                return DWORD(full.path.size() + 1);
+            }
+            std::memcpy(buffer, full.path.c_str(), full.path.size() + 1);
+            if (filePart) {
+                *filePart = full.filePart ? buffer + *full.filePart : nullptr;
+            }
+            return DWORD(full.path.size());
+        }
+
+        /// Reports the drive \c Z:, which holds the host root, as a fixed drive and any other
+        /// root as absent. \c _stat of Visual C++ 6 queries the root of a path that
+        /// FindFirstFileA cannot describe.
+        DWORD MORE_WINAPI kernel32_GetDriveTypeA(const char *root) {
+            if (!root) {
+                return DriveFixed;
+            }
+            std::string_view text(root);
+            bool isDriveZ = text.size() == 3 && (text[0] == 'Z' || text[0] == 'z') &&
+                            text[1] == ':' && (text[2] == '\\' || text[2] == '/');
+            return isDriveZ ? DriveFixed : DriveNoRootDir;
+        }
+
         BOOL MORE_WINAPI kernel32_FindNextFileW(HANDLE handle, WIN32_FIND_DATAW32 *data) {
             auto find = handleTable().get<FindObject>(handle);
             if (!find) {
@@ -240,8 +339,13 @@ namespace more::loader::winapi {
     }
 
     void registerKernel32File(ExportRegistry &registry) {
+        MORE_REGISTER(registry, kernel32, FindFirstFileA);
         MORE_REGISTER(registry, kernel32, FindFirstFileW);
         MORE_REGISTER(registry, kernel32, FindNextFileW);
+        MORE_REGISTER(registry, kernel32, FindClose);
+        MORE_REGISTER(registry, kernel32, GetCurrentDirectoryA);
+        MORE_REGISTER(registry, kernel32, GetFullPathNameA);
+        MORE_REGISTER(registry, kernel32, GetDriveTypeA);
         MORE_REGISTER(registry, kernel32, LockFileEx);
         MORE_REGISTER(registry, kernel32, UnlockFileEx);
     }

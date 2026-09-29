@@ -138,10 +138,13 @@ namespace more::loader {
         std::uint32_t m_exitCode = 0;
     };
 
-    /// A file descriptor of the host, as \c _get_osfhandle returns it for \c LockFileEx.
+    /// A file descriptor of the host, as \c _get_osfhandle returns it for \c LockFileEx and
+    /// \c CreateFileA opens it.
     class FileObject : public KernelObject {
     public:
-        explicit FileObject(int descriptor);
+        /// Wraps \a descriptor. If \a owned, the object closes the descriptor when the last
+        /// reference is released. The descriptor of a stream of the C runtime is not owned.
+        explicit FileObject(int descriptor, bool owned = false);
 
         Type type() const override;
 
@@ -164,6 +167,7 @@ namespace more::loader {
 
     private:
         int m_descriptor;
+        bool m_owned;
         int m_lockDescriptor = -1;
         std::mutex m_mutex;
     };

@@ -107,6 +107,47 @@ namespace more::loader {
     static_assert(sizeof(WIN32_FIND_DATAW32) == 592);
     static_assert(offsetof(WIN32_FIND_DATAW32, cFileName) == 44);
 
+    /// \c WIN32_FIND_DATAA.
+    struct WIN32_FIND_DATAA32 {
+        std::uint32_t dwFileAttributes;
+        FILETIME32 ftCreationTime;
+        FILETIME32 ftLastAccessTime;
+        FILETIME32 ftLastWriteTime;
+        std::uint32_t nFileSizeHigh;
+        std::uint32_t nFileSizeLow;
+        std::uint32_t dwReserved0;
+        std::uint32_t dwReserved1;
+        char cFileName[260];
+        char cAlternateFileName[14];
+    };
+    static_assert(sizeof(WIN32_FIND_DATAA32) == 320);
+    static_assert(offsetof(WIN32_FIND_DATAA32, cFileName) == 44);
+
+    /// \c SYSTEMTIME.
+    struct SYSTEMTIME32 {
+        std::uint16_t wYear;
+        std::uint16_t wMonth;
+        std::uint16_t wDayOfWeek;
+        std::uint16_t wDay;
+        std::uint16_t wHour;
+        std::uint16_t wMinute;
+        std::uint16_t wSecond;
+        std::uint16_t wMilliseconds;
+    };
+    static_assert(sizeof(SYSTEMTIME32) == 16);
+
+    /// \c TIME_ZONE_INFORMATION.
+    struct TIME_ZONE_INFORMATION32 {
+        std::int32_t Bias;
+        char16_t StandardName[32];
+        SYSTEMTIME32 StandardDate;
+        std::int32_t StandardBias;
+        char16_t DaylightName[32];
+        SYSTEMTIME32 DaylightDate;
+        std::int32_t DaylightBias;
+    };
+    static_assert(sizeof(TIME_ZONE_INFORMATION32) == 172);
+
     /// \c OVERLAPPED.
     struct OVERLAPPED32 {
         std::uint32_t Internal;
@@ -124,6 +165,24 @@ namespace more::loader {
     };
     static_assert(sizeof(STARTUPINFOA32) == 68);
 
+    /// \c OSVERSIONINFOA. \c OSVERSIONINFOEXA extends it to 156 bytes.
+    struct OSVERSIONINFOA32 {
+        std::uint32_t dwOSVersionInfoSize;
+        std::uint32_t dwMajorVersion;
+        std::uint32_t dwMinorVersion;
+        std::uint32_t dwBuildNumber;
+        std::uint32_t dwPlatformId;
+        char szCSDVersion[128];
+    };
+    static_assert(sizeof(OSVERSIONINFOA32) == 148);
+
+    /// \c CPINFO.
+    struct CPINFO32 {
+        std::uint32_t MaxCharSize;
+        std::uint8_t DefaultChar[2];
+        std::uint8_t LeadByte[12];
+    };
+    static_assert(sizeof(CPINFO32) == 20);
 }
 
 #endif // MORELOADER_RUNTIME_GUESTLAYOUT_H
