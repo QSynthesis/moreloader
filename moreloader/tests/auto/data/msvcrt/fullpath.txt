@@ -1,0 +1,28 @@
+a.txt	1	<CWD>\x5Ca.txt	a.txt	0
+.\x5Ca.txt	1	<CWD>\x5Ca.txt	a.txt	0
+..\x5Ca.txt	1	<D>\x5CGitHub\x5Cmoreloader\x5Cwork\x5Cprobe\x5Cscratch\x5Ca.txt	a.txt	0
+a/b\x5Cc	1	<CWD>\x5Ca\x5Cb\x5Cc	c	0
+sub\x5C..\x5Ca	1	<CWD>\x5Ca	a	0
+\x5Cx\x5Cy	1	<D>\x5Cx\x5Cy	y	0
+/x/y	1	<D>\x5Cx\x5Cy	y	0
+C:\x5Ca\x5C.\x5Cb\x5C..\x5Cc	1	C:\x5Ca\x5Cc	c	0
+C:\x5Ca\x5C\x5Cb	1	C:\x5Ca\x5Cb	b	0
+C:/a//b/	1	C:\x5Ca\x5Cb\x5C	(null)	0
+a.	1	<CWD>\x5Ca	a	0
+a. 	1	<CWD>\x5Ca	a	0
+a...	1	<CWD>\x5Ca	a	0
+a\x5C.\x5C	1	<CWD>\x5Ca\x5C	(null)	0
+..\x5C..\x5C..\x5C..\x5C..\x5C..\x5C..\x5C..\x5C..\x5C..\x5Cx	1	<D>\x5Cx	x	0
+C:\x5C..\x5C..\x5Cx	1	C:\x5Cx	x	0
+.	1	<CWD>	dir	0
+..	1	<D>\x5CGitHub\x5Cmoreloader\x5Cwork\x5Cprobe\x5Cscratch	scratch	0
+C:\x5C	1	C:\x5C	(null)	0
+C:	1	C:\x5C	(null)	0
+\x5C\x5Cserver\x5Cshare\x5Ca\x5C..\x5Cb	1	\x5C\x5Cserver\x5Cshare\x5Cb	b	0
+Z:\x5Chome\x5Cuser\x5Cae.wav	1	Z:\x5Chome\x5Cuser\x5Cae.wav	ae.wav	0
+a*b	1	<CWD>\x5Ca*b	a*b	0
+nul	1	\x5C\x5C.\x5Cnul	(null)	0
+sub\x5Cnul	1	\x5C\x5C.\x5Cnul	(null)	0
+con.txt	1	<CWD>\x5Ccon.txt	con.txt	0
+required	7	0
+getcwd	1	1

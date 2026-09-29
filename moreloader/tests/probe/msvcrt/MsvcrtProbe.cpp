@@ -14,6 +14,7 @@
 #include <windows.h>
 #include <shellapi.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdarg>
 #include <cstdint>
@@ -1092,6 +1093,226 @@ namespace {
                   std::to_string(GetLastError())});
     }
 
+    // GetFullPathNameA relative to a known current directory, which the output replaces with
+    // <CWD>. Its drive is replaced with <D>.
+    void probeFullPath(const std::string &outDir, const std::string &scratch) {
+        Output out(outDir, "fullpath.txt");
+        std::string directory = scratch + "\\dir";
+        CreateDirectoryA(directory.c_str(), nullptr);
+        SetCurrentDirectoryA(directory.c_str());
+        char current[MAX_PATH];
+        GetCurrentDirectoryA(MAX_PATH, current);
+        std::string cwd = current;
+        std::string drive = cwd.substr(0, 2);
+        auto placeholders = [&](std::string text) {
+            if (text.compare(0, cwd.size(), cwd) == 0) {
+                text = "<CWD>" + text.substr(cwd.size());
+            } else if (text.compare(0, 2, drive) == 0) {
+                text = "<D>" + text.substr(2);
+            }
+            return text;
+        };
+        const char *inputs[] = {
+            "a.txt", ".\\a.txt", "..\\a.txt", "a/b\\c", "sub\\..\\a", "\\x\\y", "/x/y",
+            "C:\\a\\.\\b\\..\\c", "C:\\a\\\\b", "C:/a//b/", "a.", "a. ", "a...", "a\\.\\",
+            "..\\..\\..\\..\\..\\..\\..\\..\\..\\..\\x", "C:\\..\\..\\x", ".", "..", "C:\\",
+            "C:", "\\\\server\\share\\a\\..\\b", "Z:\\home\\user\\ae.wav", "a*b", "nul",
+            "sub\\nul", "con.txt",
+        };
+        for (const char *input : inputs) {
+            char buffer[MAX_PATH];
+            char *filePart = nullptr;
+            SetLastError(0);
+            DWORD n = GetFullPathNameA(input, MAX_PATH, buffer, &filePart);
+            DWORD error = GetLastError();
+            std::string result = n && n < MAX_PATH ? placeholders(buffer) : std::string();
+            std::string file = filePart ? std::string(filePart) : std::string("(null)");
+            out.line({escapeBytes(input), std::to_string(n ? 1 : 0), escapeBytes(result),
+                      escapeBytes(file), std::to_string(n ? 0 : error)});
+        }
+        // The required size for a buffer that is too small.
+        char shortBuffer[4];
+        DWORD required = GetFullPathNameA("a.txt", sizeof shortBuffer, shortBuffer, nullptr);
+        out.line({"required", std::to_string(required - DWORD(cwd.size())),
+                  std::to_string(GetLastError())});
+        DWORD length = GetCurrentDirectoryA(0, nullptr);
+        DWORD shortLength = GetCurrentDirectoryA(4, shortBuffer);
+        out.line({"getcwd", std::to_string(length - DWORD(cwd.size())),
+                  std::to_string(shortLength - DWORD(cwd.size()))});
+    }
+
+    // The national language support functions as the C runtime of Visual C++ 6 calls them with
+    // the code page UTF-8 when it builds its multibyte character tables (setSBUpLow of
+    // mbctype.c): a vector of the bytes 0 to 255 with byte 0 replaced by a space is converted
+    // with MB_PRECOMPOSED, classified, mapped to lower and upper case and converted back into a
+    // buffer of 256 bytes.
+    void probeNls(const std::string &outDir) {
+        Output out(outDir, "nls.txt");
+
+        // Conversion flags that the documentation forbids for UTF-8.
+        const DWORD flags[] = {0, MB_PRECOMPOSED, MB_PRECOMPOSED | MB_ERR_INVALID_CHARS,
+                               MB_ERR_INVALID_CHARS};
+        for (DWORD f : flags) {
+            wchar_t buffer[4];
+            SetLastError(0);
+            int n = MultiByteToWideChar(CP_UTF8, f, "a", 1, buffer, 4);
+            out.line({"mbtowc-flags", std::to_string(f), std::to_string(n),
+                      std::to_string(n ? 0 : GetLastError())});
+        }
+
+        // The contents of an insufficient buffer after a failed conversion. The buffers are
+        // filled with 0xCC first.
+        const char *narrowInputs[] = {"abc", "a\xF0\x9F\x8E\xB5", "a\xC3\xA9"};
+        for (const char *s : narrowInputs) {
+            wchar_t buffer[2];
+            std::memset(buffer, 0xCC, sizeof buffer);
+            SetLastError(0);
+            int n = MultiByteToWideChar(CP_UTF8, 0, s, static_cast<int>(std::strlen(s)), buffer, 2);
+            out.line({"mbtowc-partial", escapeBytes(s), std::to_string(n),
+                      std::to_string(GetLastError()), hexUnits(buffer, 2)});
+        }
+        const wchar_t *wideInputs[] = {L"abc", L"a\u00E9", L"a\u4F60"};
+        for (const wchar_t *w : wideInputs) {
+            char buffer[2];
+            std::memset(buffer, 0xCC, sizeof buffer);
+            SetLastError(0);
+            int n = WideCharToMultiByte(CP_UTF8, 0, w, static_cast<int>(wcslen(w)), buffer, 2,
+                                        nullptr, nullptr);
+            out.line({"wctomb-partial", hexUnits(w, wcslen(w)), std::to_string(n),
+                      std::to_string(GetLastError()), escapeBytes(std::string(buffer, 2))});
+        }
+
+        // Character types and case mappings of single code units.
+        std::vector<wchar_t> units;
+        for (unsigned c = 0; c < 0x100; ++c) {
+            units.push_back(static_cast<wchar_t>(c));
+        }
+        units.push_back(0xFFFD);
+        for (wchar_t c : units) {
+            WORD type = 0;
+            SetLastError(0);
+            BOOL ok = GetStringTypeW(CT_CTYPE1, &c, 1, &type);
+            wchar_t lower = 0;
+            wchar_t upper = 0;
+            int nl = LCMapStringW(0, LCMAP_LOWERCASE, &c, 1, &lower, 1);
+            int nu = LCMapStringW(0, LCMAP_UPPERCASE, &c, 1, &upper, 1);
+            char buffer[64];
+            std::snprintf(buffer, sizeof buffer, "%04X", unsigned(c));
+            std::string unit = buffer;
+            std::snprintf(buffer, sizeof buffer, "%04X", unsigned(type));
+            std::string typeText = buffer;
+            out.line({"ctype1", unit, std::to_string(ok), typeText, std::to_string(nl),
+                      hexUnits(&lower, 1), std::to_string(nu), hexUnits(&upper, 1)});
+        }
+
+        // CompareStringW with NORM_IGNORECASE, which getenv of Visual C++ 6 calls through
+        // _mbsnbicoll with the locale of the multibyte code page: 0 for UTF-8, 0x804 for the
+        // code page 936 of the measuring system.
+        for (LCID lcid : {LCID(0), LCID(0x804)}) {
+            std::string lcidText = std::to_string(lcid);
+            // A unit is ignorable if the unit followed by 'a' compares equal to "a".
+            std::string ignorable;
+            for (wchar_t c = 1; c < 0x80; ++c) {
+                wchar_t pair[2] = {c, L'a'};
+                if (CompareStringW(lcid, NORM_IGNORECASE, pair, 2, L"a", 1) == CSTR_EQUAL) {
+                    ignorable += (ignorable.empty() ? "" : " ") + hexUnits(&c, 1);
+                }
+            }
+            out.line({"compare-ignorable", lcidText, ignorable});
+            // The order of the single units 0x01 to 0x7F. Units that compare equal are joined
+            // by '=' within one group.
+            std::vector<wchar_t> order;
+            for (wchar_t c = 1; c < 0x80; ++c) {
+                order.push_back(c);
+            }
+            auto compare = [lcid](wchar_t a, wchar_t b) {
+                return CompareStringW(lcid, NORM_IGNORECASE, &a, 1, &b, 1);
+            };
+            std::stable_sort(order.begin(), order.end(),
+                             [&](wchar_t a, wchar_t b) { return compare(a, b) == CSTR_LESS_THAN; });
+            std::string groups;
+            for (size_t i = 0; i < order.size(); ++i) {
+                if (i) {
+                    groups += compare(order[i - 1], order[i]) == CSTR_EQUAL ? "=" : " ";
+                }
+                groups += hexUnits(&order[i], 1);
+            }
+            out.line({"compare-order", lcidText, groups});
+            const wchar_t *pairs[][2] = {
+                {L"PATH", L"path"},         {L"TEMP", L"TMP"},       {L"TMP", L"TEMP"},
+                {L"A-B", L"A_B"},           {L"A-B", L"AB-"},        {L"A'B", L"AB'"},
+                {L"windir", L"WINDIR"},     {L"__MSVCRT", L"__msvcrt"},
+                {L"ProgramFiles(x86)", L"PROGRAMFILES(X86)"},
+            };
+            for (auto &p : pairs) {
+                int r = CompareStringW(lcid, NORM_IGNORECASE, p[0], -1, p[1], -1);
+                out.line({"compare-pair", lcidText, toUtf8(p[0]), toUtf8(p[1]), std::to_string(r)});
+            }
+        }
+
+        // The probe of __crtCompareStringA: two empty strings with a count of 1 and no flags.
+        {
+            int r = CompareStringW(0, 0, L"", 1, L"", 1);
+            out.line({"compare-probe", std::to_string(r), std::to_string(r ? 0 : GetLastError())});
+            int same = CompareStringW(0, 0, L"Ab-c", 4, L"Ab-c", 4);
+            int cased = CompareStringW(0, 0, L"ab", 2, L"AB", 2);
+            out.line({"compare-flags0", std::to_string(same), std::to_string(cased)});
+        }
+
+        // The probe of __crtGetStringTypeA: an empty string with a count of 1.
+        {
+            WORD type = 0xFFFF;
+            BOOL ok = GetStringTypeW(CT_CTYPE1, L"", 1, &type);
+            out.line({"ctype1-probe", std::to_string(ok), std::to_string(type)});
+        }
+
+        // The sequence of setSBUpLow with the code page UTF-8.
+        unsigned char vector[256];
+        for (unsigned i = 0; i < 256; ++i) {
+            vector[i] = static_cast<unsigned char>(i);
+        }
+        vector[0] = ' ';
+        const char *bytes = reinterpret_cast<const char *>(vector);
+        for (DWORD f : {DWORD(0), DWORD(MB_PRECOMPOSED)}) {
+            wchar_t wide[512];
+            SetLastError(0);
+            int required = MultiByteToWideChar(CP_UTF8, f, bytes, 256, nullptr, 0);
+            DWORD requiredError = GetLastError();
+            int converted = MultiByteToWideChar(CP_UTF8, f, bytes, 256, wide, 512);
+            out.line({"sbuplow-mbtowc", std::to_string(f), std::to_string(required),
+                      std::to_string(requiredError), std::to_string(converted),
+                      hexUnits(wide, converted > 0 ? converted : 0)});
+        }
+        {
+            wchar_t wide[512];
+            int count = MultiByteToWideChar(CP_UTF8, 0, bytes, 256, wide, 512);
+            WORD types[512] = {};
+            BOOL ok = GetStringTypeW(CT_CTYPE1, wide, count, types);
+            std::string typeList;
+            for (int i = 0; i < count; ++i) {
+                char buffer[8];
+                std::snprintf(buffer, sizeof buffer, "%s%04X", i ? " " : "", unsigned(types[i]));
+                typeList += buffer;
+            }
+            out.line({"sbuplow-ctype1", std::to_string(ok), typeList});
+            for (DWORD map : {DWORD(LCMAP_LOWERCASE), DWORD(LCMAP_UPPERCASE)}) {
+                int size = LCMapStringW(0, map, wide, count, nullptr, 0);
+                std::vector<wchar_t> mapped(size > 0 ? size : 1);
+                int mappedCount = LCMapStringW(0, map, wide, count, mapped.data(), size);
+                // The destination is filled with 0xCC first, so that a partial write is visible.
+                char narrow[256];
+                std::memset(narrow, 0xCC, sizeof narrow);
+                SetLastError(0);
+                int written = WideCharToMultiByte(CP_UTF8, 0, mapped.data(), mappedCount, narrow,
+                                                  256, nullptr, nullptr);
+                DWORD error = GetLastError();
+                out.line({"sbuplow-lcmap", std::to_string(map), std::to_string(size),
+                          std::to_string(mappedCount), std::to_string(written),
+                          std::to_string(error), escapeBytes(std::string(narrow, 256))});
+            }
+        }
+    }
+
 }
 
 int main(int argc, char *argv[]) {
@@ -1136,5 +1357,7 @@ int main(int argc, char *argv[]) {
     probeCtype(outDir);
     probeCommandLine(outDir);
     probeUtf8(outDir);
+    probeNls(outDir);
+    probeFullPath(outDir, scratch);
     return 0;
 }
