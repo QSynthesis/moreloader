@@ -61,9 +61,9 @@
 
 ## Inferred
 
-- `0x44e2dc` 为短时傅里叶变换的正变换，可能是 ciglet 的 `cig_stft_forward`。
+- `0x44e2dc` 为短时傅里叶变换的正变换，所属的库未确定。
   - 依赖证据：窗函数名 `blackman_harris` 的字符串比较、逐帧的中心与长度数组、FFT 之后求幅度（平方和开方）与相位（两参数的反正切）、相位展开的循环。
-  - 还缺什么：与 ciglet 源码的逐项核对。在此之前不以 `ciglet_` 前缀命名。
+  - 与 ciglet 的核对（公开资料，[Sleepwalking/ciglet](https://github.com/Sleepwalking/ciglet) 的 `895ba9b1c0eabee83d3544208bbc82420efa3206`，2019-09-08）：`cig_stft_forward` 同为 `#pragma omp parallel for` 的逐帧循环，窗函数经 `get_window` 按名称选取，帧的放置方式（前半帧放在缓冲区末尾、后半帧放在开头）相同。不同之处：ciglet 有 13 个参数，每帧以 `calloc` 分配缓冲区，只求幅度与相位。moresampler 的函数在 Ghidra 中识别为 12 个参数，缓冲区在栈上（约 512 KB），另有相位展开与 -100 的下限。ciglet 中没有其他函数与之相符。二者可能有共同来源（作者相同的 libllsm 或 ciglet 的早期版本），但不是同一函数，因此不以 `ciglet_` 前缀命名。
 - 输出随控制字变化的行为不是 moresampler 有意的设计。
   - 依赖证据：精度的分配只取决于帧落在哪个线程，与算法无关。
   - 还缺什么：无法从二进制中确认意图。
@@ -82,7 +82,7 @@
 
 ## 待办
 
-- [ ] 如需识别库的来源，与 ciglet 的 `cig_stft_forward` 逐项核对。
+- [x] 与 ciglet 的 `cig_stft_forward` 核对：不是同一函数，见 Inferred。
 
 ## 备注
 
