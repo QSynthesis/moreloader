@@ -1,21 +1,32 @@
 # moreloader
 
-A minimal PE loader and Windows API layer that runs the unmodified 32-bit `moresampler.exe` 0.8.4 as a command-line program on Linux, without Wine. The output is intended to be byte-identical to that of a native run on Windows.
+不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，使未经修改的 32 位 `moresampler.exe` 0.8.4 与 UTAU 自带的 `resampler.exe` 在 Linux 上作为命令行程序运行。目标是输出与 Windows 原生运行逐字节相同。
 
-## Status
+## 现状
 
-Early development. See [docs/Status.md](docs/Status.md).
+| 平台 | 运行方式 | 与 Windows 的比较 |
+|---|---|---|
+| Linux x86_64 | 直接运行 | moresampler 与 resampler.exe 逐字节一致，包括 UTAU 工程的完整渲染 |
+| Linux ARM64 | FEX-Emu | 逐字节一致 |
+| Linux RISC-V | qemu-i386 加 [`third-party/qemu`](third-party/qemu/README.md) 的补丁 | 逐字节一致 |
 
-## moresampler
+详见 [docs/Status.md](docs/Status.md)。
 
-moresampler is not part of this project and is not distributed with it. Its license permits redistribution of the original package, but not distribution as part of other software without the permission of its author. Obtain moresampler 0.8.4 separately and pass the path of `moresampler.exe` to the loader. The executable file is neither modified nor patched.
+## 支持的程序
 
-## Building
+| 程序 | 说明 |
+|---|---|
+| moresampler 0.8.4（`moresampler.exe`） | resampler 模式、wavtool 模式与频率表生成 |
+| UTAU 自带的 resampler（`resampler.exe`，与 UTAU 0.4.18 一同发布） | resampler 模式 |
 
-The loader is a 32-bit x86 Linux program, linked statically. Requirements:
+两个程序都不属于本项目，也不随本项目分发。moresampler 的许可证允许原样再分发，但未经作者许可不得作为其他软件的一部分分发；`resampler.exe` 随 UTAU 发布。请另行取得程序，把可执行文件的路径传给加载器。加载器不修改可执行文件，也不在内存中打补丁。
 
-- CMake 3.19 or later, Ninja, and GCC with 32-bit support (`gcc-multilib`). Without administrator rights, `scripts/fetch-i386-overlay.sh` extracts the required 32-bit libraries into a directory that is passed as `MORE_I386_OVERLAY`.
-- 32-bit builds of [qmsetup](https://github.com/stdware/qmsetup) and, for the tests, Boost.Test, built by `scripts/build-i386-deps.sh`.
+## 构建
+
+加载器是静态链接的 32 位 x86 Linux 程序。需要：
+
+- CMake 3.19 或更高版本、Ninja，以及支持 32 位的 GCC（`gcc-multilib`）。没有管理员权限时，`scripts/fetch-i386-overlay.sh` 把所需的 32 位库解包到一个目录，配置时以 `MORE_I386_OVERLAY` 传入。
+- 32 位的 [qmsetup](https://github.com/stdware/qmsetup)，以及测试所需的 Boost.Test，由 `scripts/build-i386-deps.sh` 构建。
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
@@ -24,22 +35,37 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
 cmake --build build
 ```
 
-## Usage
+## 用法
 
 ```sh
-moreloader <path to moresampler.exe> <arguments of moresampler...>
+moreloader [选项] <moresampler.exe 或 resampler.exe 的路径> <该程序的参数...>
 ```
 
-Absolute host paths among the arguments are presented to moresampler as paths on drive `Z:`, in the manner of Wine.
+例如以 UTAU 的 13 个参数渲染一个音符：
 
-## Repository layout
+```sh
+moreloader /opt/utau/resampler.exe /voice/a.wav /tmp/out.wav C4 100 "" 0 500 0 0 100 0 '!120' 'AA#5#'
+moreloader /opt/moresampler/moresampler.exe /voice/a.wav /tmp/out.wav C4 100 "" 0 500 0 0 100 0 '!120' 'AA#5#'
+```
 
-| Directory | Content |
+参数中以 `/` 开头、且在主机上存在或位于已有目录中的，以 Wine 的方式作为 `Z:` 盘上的路径交给程序；其余参数原样传递，因此以 `/` 开头的音高曲线不受影响。
+
+| 选项 | 作用 |
 |---|---|
-| `moreloader` | The libraries of the loader, the driver program and the tests |
-| `cmake`, `scripts` | The 32-bit toolchain file and the scripts that prepare the build environment and the analysis |
-| `docs` | Design documents and work logs, in Chinese |
+| `--trace-imports` | 报告每一次导入函数的调用 |
+| `--trace-stubs` | 报告只部分实现的调用 |
+| `--debug-strings` | 报告传给 `OutputDebugStringA` 的字符串 |
+| `--check-heap` | 报告 msvcrt 堆中越过块末尾的写入 |
 
-## License
+## 目录
 
-MIT License. See [LICENSE](LICENSE).
+| 目录 | 内容 |
+|---|---|
+| `moreloader` | 加载器的库、驱动程序与测试 |
+| `cmake`、`scripts` | 32 位工具链文件，以及准备构建环境与分析的脚本 |
+| `third-party` | 外部依赖的配置与 QEMU 的补丁 |
+| `docs` | 设计文档与工作日志 |
+
+## 许可证
+
+MIT 许可证，见 [LICENSE](LICENSE)。`third-party/qemu` 中的补丁按 QEMU 的许可证（GPL-2.0）分发。
