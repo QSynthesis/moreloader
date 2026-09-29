@@ -72,7 +72,7 @@
 
 - 32 位 TEB 至少提供：`+0x00` 异常链表头（置 `0xFFFFFFFF`）、`+0x04` 栈顶、`+0x08` 栈底、`+0x18` 自身地址、`+0x20` 进程 ID、`+0x24` 线程 ID、`+0x2c` `ThreadLocalStoragePointer`、`+0x30` PEB、`+0x34` LastError、`+0xe10` `TlsSlots[64]`。`GetLastError`、`TlsGetValue` 等直接读写 TEB，以便与可能内联访问 FS 的代码一致。
 - 每个线程（包括 `_beginthreadex` 创建的）在执行任何客体代码前装好自己的 FS。
-- **x87 控制字**：Windows 进程初始为 `0x27F`（53 位精度），Linux 为 `0x37F`（64 位扩展精度）。进入客体代码前以及每个新线程开始时须设为 `0x27F`，否则 x87 运算结果与 Windows 不同，无法逐字节一致。MXCSR 两者缺省相同（`0x1F80`），仍应显式设置。
+- **x87 控制字**：Windows 进程初始为 `0x27F`（53 位精度），Linux 为 `0x37F`（64 位扩展精度）。进入客体代码前以及每个新线程开始时须设为 `0x27F`，否则 x87 运算结果与 Windows 不同，无法逐字节一致。Windows 的新线程不继承创建者的控制字，一律从 `0x27F` 开始（实测，`threads.txt`）。MXCSR 两者缺省相同（`0x1F80`），仍应显式设置。
 
 ### 5.3 TLS
 

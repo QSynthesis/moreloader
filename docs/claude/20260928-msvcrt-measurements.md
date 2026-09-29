@@ -38,6 +38,7 @@
 ### Windows 函数
 
 - `CommandLineToArgvW` 的 19 个用例与 shell32 的三引号规则一致（`cmdline.txt`）。
+- 新线程的浮点状态（`threads.txt`，2026-09-29 补测）：创建者的控制字为 `0x37F` 或 `0x07F` 时，`CreateThread` 与 msvcrt.dll 的 `_beginthreadex` 创建的新线程控制字均为 `0x27F`、MXCSR 均为 `0x1F80`，不继承创建者。moresampler 的输出随处理器数变化即源于此，见 [`20260929-openmp-evidence.md`](20260929-openmp-evidence.md)。测试为 `tests/auto/Support/test_FloatingPoint.cpp`，把 `windowsControlWord` 改为 `0x37F` 时失败。
 - `MultiByteToWideChar(CP_UTF8)` 对非法序列的替换**不是** Unicode 的最大子部分：第二字节为续字节但超出首字节允许的范围时，首字节与该字节合为一个 U+FFFD。stdcorelib 按最大子部分替换，因此解码方向在 `Support/CodePage` 中自行实现（作者决定保留在 moreloader 内）。
 
 ### 数学函数（`math.txt`、`math-st0.txt`）
