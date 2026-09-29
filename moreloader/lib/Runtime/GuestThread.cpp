@@ -99,6 +99,8 @@ namespace more::loader {
         }
         loadFS(*selector);
 
+        // A new thread does not inherit the control word of its creator. moresampler depends on
+        // this: its main thread runs with 0x37F after _fpreset, the OpenMP workers with 0x27F.
         setX87ControlWord(windowsControlWord);
         setMXCSR(windowsMXCSR);
 

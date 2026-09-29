@@ -6,10 +6,14 @@ namespace more::loader {
     /// Initial x87 control word of a Windows process: all exceptions masked, 53-bit precision,
     /// rounding to nearest. The initial control word of a Linux process is 0x37F, which selects
     /// 64-bit precision and changes the results of x87 arithmetic in the guest.
+    ///
+    /// Every new thread starts with this control word, regardless of the control word of the
+    /// creating thread. This was measured on Windows with \c CreateThread and the
+    /// \c _beginthreadex of msvcrt.dll.
     constexpr unsigned short windowsControlWord = 0x27F;
 
     /// Initial value of MXCSR in both Windows and Linux: all exceptions masked, rounding to
-    /// nearest.
+    /// nearest. Every new thread on Windows starts with this value.
     constexpr unsigned int windowsMXCSR = 0x1F80;
 
     /// Returns the x87 control word of the calling thread.
