@@ -3,7 +3,7 @@
 #
 #     python compare.py [--program moresampler|resampler] [--voice <voice bank>]
 #                       [--wav name.wav ...] [--case frq|render|wavtool ...]
-#                       [--host <ssh host> [--runner <command>]]
+#                       [--host <ssh host> [--runner <command>] [--loader <path>]]
 #
 # Run on Windows from any directory. The Windows side works in work/compare of the repository:
 #   bin/            moresampler.exe from work/moresampler and a moreconfig.txt for testing, or
@@ -16,7 +16,8 @@
 # With --host, the Linux side works in ~/moreloader-compare of that ssh host instead, which
 # receives a copy of the loader, and its output is fetched into work/compare/remote/ for the
 # comparison. --runner precedes the loader in each command, for example the path of FEX on an
-# ARM64 host.
+# ARM64 host or of box64 on a RISC-V host. --loader selects the loader to copy, for example the
+# dynamically linked build in build-dynamic/ that box32 requires.
 #
 # Both sides of a step run in parallel. Progress with the duration of each run is written to the
 # standard output and to work/compare/progress.log.
@@ -81,6 +82,9 @@ host = None
 
 # The command that precedes the loader on the Linux side, as a list of words.
 runner = []
+
+# The loader that is copied to the ssh host.
+loader = BUILT_LOADER
 
 
 def log(message):
@@ -154,7 +158,7 @@ def prepare(voice, wavs):
         wsl(f"rm -rf '{target}' && mkdir -p '{target}/linux/out'")
         scp(os.path.join(WORK, 'bin'), f'{host}:{target}/bin')
         scp(source, f'{host}:{target}/linux/voice')
-        scp(BUILT_LOADER, f'{host}:{target}/moreloader')
+        scp(loader, f'{host}:{target}/moreloader')
         wsl(f"chmod +x '{target}/moreloader'")
         return
     wsl(f"rm -rf '{target}' && mkdir -p '{target}/bin' '{target}/linux/out' && "
@@ -262,7 +266,7 @@ def compare_trees():
 
 
 def main():
-    global linuxHome, host, runner, program
+    global linuxHome, host, runner, program, loader
     parser = argparse.ArgumentParser()
     parser.add_argument('--program', choices=['moresampler', 'resampler'], default='moresampler')
     parser.add_argument('--voice', default=DEFAULT_VOICE)
@@ -270,9 +274,11 @@ def main():
     parser.add_argument('--case', action='append', default=None)
     parser.add_argument('--host', default=None)
     parser.add_argument('--runner', default='')
+    parser.add_argument('--loader', default=BUILT_LOADER)
     options = parser.parse_args()
     host = options.host
     runner = shlex.split(options.runner)
+    loader = options.loader
     program = options.program
     wavs = options.wav or ['ae.wav', 'baf.wav', 'bam.wav']
     cases = options.case or (['render'] if program == 'resampler' else ['frq', 'render', 'wavtool'])
