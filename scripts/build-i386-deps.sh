@@ -2,23 +2,19 @@
 # Builds the 32-bit dependencies of moreloader and installs them into one prefix:
 #   - qmsetup, from a local clone, with its tool qmcorecmd linked statically so that it runs at
 #     build time without the 32-bit dynamic loader;
-#   - stdcorelib, from a local clone, as a static library;
 #   - Boost.Test 1.83 as a static library, for the automatic tests.
 #
-# Usage: scripts/build-i386-deps.sh <qmsetup source directory> <stdcorelib source directory>
-#            [<prefix>]
+# Usage: scripts/build-i386-deps.sh <qmsetup source directory> [<prefix>]
 # The default prefix is ~/.local/opt/moreloader-i386. The overlay of fetch-i386-overlay.sh is used
 # if MORE_I386_OVERLAY is set.
 #
-# Afterwards pass -Dqmsetup_DIR=<prefix>/lib/cmake/qmsetup,
-# -Dstdcorelib_DIR=<prefix>/lib/cmake/stdcorelib and -DBoost_DIR=<prefix>/lib/cmake/Boost-1.83.0
-# to CMake.
+# Afterwards pass -Dqmsetup_DIR=<prefix>/lib/cmake/qmsetup and
+# -DBoost_DIR=<prefix>/lib/cmake/Boost-1.83.0 to CMake.
 
 set -euo pipefail
 
 qmsetup_source="$(realpath "$1")"
-stdcorelib_source="$(realpath "$2")"
-prefix="${3:-$HOME/.local/opt/moreloader-i386}"
+prefix="${2:-$HOME/.local/opt/moreloader-i386}"
 work="$HOME/.cache/moreloader-src"
 toolchain="$(realpath "$(dirname "$0")/../cmake/toolchains/linux-i386.cmake")"
 overlay="${MORE_I386_OVERLAY:-}"
@@ -36,16 +32,6 @@ cmake -S "$qmsetup_source" -B "$work/qmsetup-build" -G Ninja -DCMAKE_BUILD_TYPE=
     -DCMAKE_EXE_LINKER_FLAGS=-static -DCMAKE_INSTALL_PREFIX="$prefix"
 cmake --build "$work/qmsetup-build"
 cmake --install "$work/qmsetup-build"
-
-# ----------------------------------
-# stdcorelib
-# ----------------------------------
-rm -rf "$work/stdcorelib-build"
-cmake -S "$stdcorelib_source" -B "$work/stdcorelib-build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_TOOLCHAIN_FILE="$toolchain" -DMORE_I386_OVERLAY="$overlay" \
-    -DSTDC_BUILD_STATIC=ON -DCMAKE_INSTALL_PREFIX="$prefix"
-cmake --build "$work/stdcorelib-build"
-cmake --install "$work/stdcorelib-build"
 
 # ----------------------------------
 # Boost.Test

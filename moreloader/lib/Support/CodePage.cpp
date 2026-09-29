@@ -2,11 +2,9 @@
 
 #include <cstdint>
 
-#include <stdcorelib/utf.h>
-
 namespace more::loader {
 
-    static constexpr char16_t replacementCharacter = stdc::utf::replacement_character;
+    static constexpr char16_t replacementCharacter = 0xFFFD;
 
     static void appendUtf16(std::u16string &out, char32_t codePoint) {
         if (codePoint < 0x10000) {
@@ -101,13 +99,45 @@ namespace more::loader {
         return result;
     }
 
+    static void appendUtf8(std::string &out, char32_t codePoint) {
+        if (codePoint < 0x80) {
+            out.push_back(static_cast<char>(codePoint));
+        } else if (codePoint < 0x800) {
+            out.push_back(static_cast<char>(0xC0 | (codePoint >> 6)));
+            out.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+        } else if (codePoint < 0x10000) {
+            out.push_back(static_cast<char>(0xE0 | (codePoint >> 12)));
+            out.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+        } else {
+            out.push_back(static_cast<char>(0xF0 | (codePoint >> 18)));
+            out.push_back(static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+        }
+    }
+
     Conversion<std::string> wideToMultiByte(std::u16string_view text) {
-        // The encoding direction of stdcorelib agrees with WideCharToMultiByte, which replaces
-        // each unpaired surrogate with U+FFFD.
         Conversion<std::string> result;
-        bool ok = true;
-        result.text = stdc::utf::utf16_to_utf8(text, stdc::utf::replace, &ok);
-        result.invalid = !ok;
+        std::string &out = result.text;
+        out.reserve(text.size());
+        for (std::size_t i = 0; i < text.size(); ++i) {
+            char16_t unit = text[i];
+            bool high = unit >= 0xD800 && unit <= 0xDBFF;
+            bool low = unit >= 0xDC00 && unit <= 0xDFFF;
+            if (high && i + 1 < text.size() && text[i + 1] >= 0xDC00 && text[i + 1] <= 0xDFFF) {
+                char32_t codePoint = 0x10000 + ((char32_t(unit) - 0xD800) << 10) +
+                                     (char32_t(text[i + 1]) - 0xDC00);
+                appendUtf8(out, codePoint);
+                ++i;
+            } else if (high || low) {
+                // Each unpaired surrogate becomes U+FFFD, as measured.
+                appendUtf8(out, replacementCharacter);
+                result.invalid = true;
+            } else {
+                appendUtf8(out, unit);
+            }
+        }
         return result;
     }
 

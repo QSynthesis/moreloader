@@ -8,6 +8,5 @@ file(GLOB_RECURSE _src CONFIGURE_DEPENDS *.cpp *.h ../../include/moreloader/Imag
 moreloader_add_library(${PROJECT_NAME} STATIC
     SOURCES ${_src}
     LINKS MoreLoaderSupport
-    LINKS_PRIVATE stdcorelib::stdcorelib
     INCLUDE_PRIVATE ../../include/moreloader/Image/** **
 )
