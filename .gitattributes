@@ -3,3 +3,6 @@
 
 # Golden data is compared byte for byte by the tests.
 moreloader/tests/auto/data/** text eol=lf
+
+# Patches of third-party sources are applied on Linux.
+third-party/**/*.patch text eol=lf
