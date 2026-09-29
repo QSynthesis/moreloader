@@ -10,8 +10,9 @@
 | msvcrt 实测 | 探针 `moreloader/tests/probe/msvcrt` 与黄金数据，结论见 [`20260928-msvcrt-measurements.md`](claude/20260928-msvcrt-measurements.md) |
 | `MoreLoaderSupport` | `CodePage`（Windows 规则的 UTF-8 编解码与缓冲区不足时的部分写入）、`CommandLine`（`CommandLineToArgvW` 规则）、`PathMapping`（`Z:` 映射、`GetFullPathNameA` 规则、命令行参数的路径规则）、`CharacterType`（CT_CTYPE1、大小写、`NORM_IGNORECASE` 比较）、`Diagnostics`、`FloatingPoint`，均有测试 |
 | `MoreLoaderCRT` | msvcrt 的纯计算部分：printf 引擎、`qsort`、`rand`、`strtol` 族与 `atof`、字符分类、`strerror` 与 `asctime`、导入的数学函数，均与黄金数据比对。另有 `--check-heap` 的堆保护区 |
-| `MoreLoaderImage` | PE 解析与固定基址映射，尚无自动测试 |
-| `MoreLoaderRuntime` | 导出注册表、TEB 与 FS 段（`set_thread_area`）、客体线程、内核对象与等待、进程启动与退出、桩代码与故障报告。已在 WSL、FEX、qemu-i386 下运行完整工程，尚无自动测试 |
+| `MoreLoaderImage` | PE 解析与固定基址映射，以测试中构造的 PE 文件测试 |
+| `MoreLoaderRuntime` | 导出注册表、TEB 与 FS 段（`set_thread_area`）、客体线程、内核对象与等待、进程启动与退出、桩代码与故障报告。已在 WSL、FEX、qemu-i386 下运行完整工程。每个头文件都有测试，客体结构的布局与 Windows 实测的 `layout.txt` 比对 |
+| 自动测试 | `include/moreloader/` 的每个头文件都有对应的测试，共 94 个用例。导出注册的测试读取用户自备的 exe，未配置时跳过，见 [`20260929-tests.md`](claude/20260929-tests.md) |
 | `MoreLoaderWinAPI` 与 CRT 的导出包装 | moresampler 与 resampler.exe 所需的 kernel32 与 msvcrt 函数，见 [`20260928-loader-first-run.md`](claude/20260928-loader-first-run.md)、[`20260929-resampler.md`](claude/20260929-resampler.md) |
 | 手动测试 | `moreloader/tests/manual/compare`（与 Windows 的逐字节比较）、`moreloader/tests/manual/x87`（x87 探针、记录的重放、参数约化的模型） |
 
