@@ -6,7 +6,7 @@
 
 moreloader 是不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，使未经修改的 `moresampler.exe`（0.8.4，32 位）在 Linux 上作为命令行程序运行，输出与 Windows 原生运行逐字节相同。里程碑 1 为 Linux x86_64（以 32 位进程运行），里程碑 2 为 Linux ARM64（经 FEX-Emu 或 box64 的 32 位模式）。macOS 与 64 位 moresampler 不在范围内。作者 2026-09-29 追加 UTAU 自带的 `resampler.exe`（VC6 编译，只导入 kernel32），标准相同。
 
-目标、范围、交付物与验收标准**以 [`docs/TaskSpec.md`](docs/TaskSpec.md) 为唯一权威**。该文档与代码冲突时修改代码；确需修改设计时，先与作者确认。
+目标、范围、交付物与验收标准**以 [`docs/TaskSpec.md`](docs/TaskSpec.md) 为唯一权威**。该文档与代码冲突时修改代码。确需修改设计时，先与作者确认。
 
 ## 快速开始
 
@@ -26,7 +26,7 @@ moreloader 是不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，�
 - **构建在 WSL 中进行**（`Ubuntu-24.04`，GCC 13）。加载器必须是 32 位 x86 Linux 程序，配置时指定 `-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/linux-i386.cmake`。
 - WSL 与 overworld 均未安装 `gcc-multilib`，`sudo` 需要密码。`scripts/fetch-i386-overlay.sh` 在无管理员权限的情况下把 32 位 glibc 与 libgcc 解包到 `~/.local/share/moreloader-i386`，配置时以 `-DMORE_I386_OVERLAY=<目录>` 传入。安装了 `gcc-multilib` 的系统不需要该目录。overlay 中的动态链接程序在本机缺少 `/lib/ld-linux.so.2`，无法运行，因此在构建机上运行的程序一律静态链接。
 - 加载器默认静态链接（`MORE_STATIC`），运行时不需要任何 32 位库。
-- **依赖**：构建系统使用 qmsetup（与 HelloUtau 相同），自动测试使用 Boost.Test（组织方式与 stdcorelib 相同）。二者都必须是 32 位版本，由 `scripts/build-i386-deps.sh <qmsetup 源码目录>` 编译并安装到 `~/.local/opt/moreloader-i386`：qmsetup 取自 `D:\GitHub\qmsetup`（WSL 中为 `/mnt/d/GitHub/qmsetup`），其 `qmcorecmd` 静态链接；Boost.Test 为 1.83 的静态库。不依赖 stdcorelib（作者 2026-09-29 决定移除，原先只用于 UTF-16 到 UTF-8 的转换）。不要使用系统的 64 位版本，它们的包配置文件会以指针宽度不符为由被 CMake 拒绝。
+- **依赖**：构建系统使用 qmsetup（与 HelloUtau 相同），自动测试使用 Boost.Test（组织方式与 stdcorelib 相同）。二者都必须是 32 位版本，由 `scripts/build-i386-deps.sh <qmsetup 源码目录>` 编译并安装到 `~/.local/opt/moreloader-i386`：qmsetup 取自 `D:\GitHub\qmsetup`（WSL 中为 `/mnt/d/GitHub/qmsetup`），其 `qmcorecmd` 静态链接。Boost.Test 为 1.83 的静态库。不依赖 stdcorelib（作者 2026-09-29 决定移除，原先只用于 UTF-16 到 UTF-8 的转换）。不要使用系统的 64 位版本，它们的包配置文件会以指针宽度不符为由被 CMake 拒绝。
 - 构建命令：
 
 ```sh
@@ -53,8 +53,8 @@ ctest --test-dir build --no-tests=error
 
 详见 [`docs/TaskSpec.md`](docs/TaskSpec.md) 第 2 节，要点如下。
 
-- **许可证**：`moresampler.exe` 不得提交进仓库，不得与加载器一起打包分发，由用户自备。**不得修改 exe 文件本身**；在内存中打补丁原则上不需要，确需时须先向作者说明。
-- **只用副本**：原件位于 `E:\temp-repos\UTAU\UTAU\tools\moresampler 0.8.4\`，不得在该目录内运行或写入。分析与测试只使用 `scripts/PrepareWork.ps1` 复制到 `work/moresampler/` 的副本；测试用音源同样只使用复制到 `work/` 下的副本。`work/` 已被 `.gitignore` 忽略。
+- **许可证**：`moresampler.exe` 不得提交进仓库，不得与加载器一起打包分发，由用户自备。**不得修改 exe 文件本身**。在内存中打补丁原则上不需要，确需时须先向作者说明。
+- **只用副本**：原件位于 `E:\temp-repos\UTAU\UTAU\tools\moresampler 0.8.4\`，不得在该目录内运行或写入。分析与测试只使用 `scripts/PrepareWork.ps1` 复制到 `work/moresampler/` 的副本。测试用音源同样只使用复制到 `work/` 下的副本。`work/` 已被 `.gitignore` 忽略。
 - **不复制代码**：Wine（LGPL-2.1）与 Tavis Ormandy 的 loadlibrary（GPL-2.0）只作为语义参考，不复制其代码。反编译得到的 moresampler 伪代码不粘贴进源代码与文档，文档以文字、表格和伪代码描述行为。
 - **来源的区分**：文档中每条关于 Windows、msvcrt 或 moresampler 行为的结论注明依据，依据分为四类：静态分析（函数地址与名称）、实测（步骤、程序与样本）、公开资料（链接）、推断（推断的根据）。推断不得写成定论。
 
@@ -79,13 +79,13 @@ ctest --test-dir build --no-tests=error
 
 目录、命名、格式、注释与头文件引用见 [`docs/Development.md`](docs/Development.md)，它才是权威，以下仅为摘要。规则取自 HelloUtau 的 `AGENTS.md` 与 `docs/Development.md`，本仓库特有的差异在 `docs/Development.md` 中说明理由。
 
-- 一个模块 `moreloader`（命名空间 `more::loader`；模拟 msvcrt 与 Windows 语义的代码位于 `more::loader::msvcrt` 与 `more::loader::winapi`），由若干静态子库与一个薄驱动组成：`MoreLoaderSupport`、`MoreLoaderImage`、`MoreLoaderRuntime`、`MoreLoaderWinAPI`、`MoreLoaderCRT`，以及 `tools/driver/main.cpp` 产出的可执行文件 `moreloader`。
+- 一个模块 `moreloader`（命名空间 `more::loader`，其中模拟 msvcrt 与 Windows 语义的代码分别位于 `more::loader::msvcrt` 与 `more::loader::winapi`），由若干静态子库与一个薄驱动组成：`MoreLoaderSupport`、`MoreLoaderImage`、`MoreLoaderRuntime`、`MoreLoaderWinAPI`、`MoreLoaderCRT`，以及 `tools/driver/main.cpp` 产出的可执行文件 `moreloader`。
 - 模块包含一个 `include/` 和一个 `lib/`：`moreloader/include/moreloader/Image/PEFile.h` 对应 `moreloader/lib/Image/PEFile.cpp`。include 的命名空间是模块名，写 `<moreloader/Image/PEFile.h>`。私有头文件与源文件放在一起，加 `_p.h` 后缀，尽量少用。
-- **缩写词全大写**（`PEFile`、`threadID`、`loadFS`、`MoreLoaderCRT`），位于小驼峰名字开头时全小写（`teb()`）；逐字对应 Windows API 与 SDK 的名字保留原拼写（`kernel32_GetCurrentProcessId`、`TEB32::TlsSlots`）。
-- 文件名、类型名采用大驼峰；函数、参数、变量、命名空间采用小驼峰；枚举成员采用大驼峰；私有数据成员使用 `m_` 前缀；常量使用小驼峰。**唯一的例外是客体可见的包装函数**，命名为 `<dll>_<导出名>`（如 `kernel32_GetLastError`、`msvcrt_fopen`），以便与导入表直接对照检索。
+- **缩写词全大写**（`PEFile`、`threadID`、`loadFS`、`MoreLoaderCRT`），位于小驼峰名字开头时全小写（`teb()`）。逐字对应 Windows API 与 SDK 的名字保留原拼写（`kernel32_GetCurrentProcessId`、`TEB32::TlsSlots`）。
+- 文件名、类型名采用大驼峰。函数、参数、变量、命名空间采用小驼峰。枚举成员采用大驼峰。私有数据成员使用 `m_` 前缀。常量使用小驼峰。**唯一的例外是客体可见的包装函数**，命名为 `<dll>_<导出名>`（如 `kernel32_GetLastError`、`msvcrt_fopen`），以便与导入表直接对照检索。
 - 可能不存在结果的函数返回 `std::optional<T>`，不要使用「bool 加输出参数」，也不要用某个特定值表示「不存在」。模拟 Windows API 的包装函数保持 Windows 的返回约定。
 - **编译器相关的属性一律经由 `<moreloader/Support/MoreLoaderSupportGlobal.h>` 中的宏书写**（`MORE_WINAPI`、`MORE_CDECL`、`MORE_PRINTF_FORMAT` 等），不直接写 `__attribute__`、`__declspec` 或 `__builtin_*`，使源码在 MSVC 下同样可以解析。
-- 头文件中实现的函数一律显式写出 `inline`；初始化表达式为指针时写 `auto name = ...`；析构函数不写 `override`，头文件中被继承的类不写 `final`；命名空间结束处不添加注释。
+- 头文件中实现的函数一律显式写出 `inline`。初始化表达式为指针时写 `auto name = ...`。析构函数不写 `override`，头文件中被继承的类不写 `final`。命名空间结束处不添加注释。
 
 ### 文体
 
@@ -98,6 +98,7 @@ ctest --test-dir build --no-tests=error
 - **条件用 if，where 只表示处所。** 不写 empty where there is none，写 empty if absent。不用 one 回指前文名词，直接重复该名词。
 - **不使用口语短语。** 不写 whatever else、for good、as it stands、on its own、on the way out、at a glance、there and back、is given up on、the rest of why、and all 等说法，改为准确的书面表达。
 - **句子完整。** 不写片段句、逗号粘连句和反问句。不以 So、And so、Which is why、That is why、Hence 开头叙述因果，改为在同一句中用 because、therefore 表明。不对读者使用第二人称。
+- **不使用分号。** 分句之间不以「；」或「;」连接，应断句处即断句。列举的各项较长时分别成句，较短时以「，」或「、」分隔。本规则适用于注释、文档（包括 `docs/claude/` 下的日志）、README、帮助文本和诊断消息在内的全部文本，代码语法中的分号除外。
 - **函数说明以动词开头**（Returns、Decodes、Reads、Rejects）。`\return` 写明每种情况的返回值。布尔查询写 Returns whether …。
 - 中文文本同样适用：使用书面语，不用「别」「搞」「就行」「得（表必须）」「啥」「拿来」「反正」「其实」「说白了」「这玩意儿」等口语词。标题不用「为什么」「怎么做」，改用「动机」「设计理由」「实现方式」。「不要」「必须」等规范性祈使句不属于口语，照常使用。
 
@@ -159,7 +160,7 @@ ctest --test-dir build --no-tests=error
 
 ## 已知问题
 
-- **本机环境变量中配置了 HTTP 代理**，发往 `127.0.0.1` 的请求也会被交给代理并返回 502。直接用 `curl` 调用 bridge 时加 `--noproxy '*'`；`scripts/BridgeCall.py` 已关闭 `trust_env`。
+- **本机环境变量中配置了 HTTP 代理**，发往 `127.0.0.1` 的请求也会被交给代理并返回 502。直接用 `curl` 调用 bridge 时加 `--noproxy '*'`。`scripts/BridgeCall.py` 已关闭 `trust_env`。
 - **Git Bash 会把以 `/` 开头的参数转换为 Windows 路径**，`/functions/search` 会变成 `C:/Program Files/Git/functions/search`。在 Git Bash 中调用 `scripts/BridgeCall.py` 或 `ghidra-re` 时先设置 `MSYS_NO_PATHCONV=1`。
 - **在 Windows 上经 `wsl -- bash -c` 执行命令时，标准输出可能丢失或以 UTF-16 输出**（`wsl.exe` 的提示信息为 UTF-16）。需要可靠的输出时，让 WSL 中的脚本把输出写入文件，再在 Windows 侧读取。
 - **仓库位于不区分大小写的 NTFS（WSL 中为 `/mnt/e`），而子库的 include 目录在编译器的搜索路径中。** 头文件名不得在忽略大小写后与系统头文件同名：名为 `Strings.h` 的头文件会被 glibc 的 `<string.h>` 当作 `<strings.h>` 包含，产生大量 C 链接的模板错误。命名时避开 `string`、`strings`、`math`、`time`、`signal`、`random`、`locale`、`errno` 等。

@@ -38,15 +38,15 @@
 
 ## 证据来源
 
-- Ghidra 伪代码：`decomp/moresampler/openmp/FUN_004195a0_mainResampler.c`、`FUN_0044e2dc_stftForwardParallel.c`、`FUN_0044d6a6_stftForwardParallel_ompFn.c`；libgomp 的函数只核对，不导出。
+- Ghidra 伪代码：`decomp/moresampler/openmp/FUN_004195a0_mainResampler.c`、`FUN_0044e2dc_stftForwardParallel.c`、`FUN_0044d6a6_stftForwardParallel_ompFn.c`。libgomp 的函数只核对，不导出。
 - 汇编核对：`objdump -d` 的 `0x47c190` 至 `0x47c255`、`0x419ae5` 至 `0x419b54`、`0x41aad0` 至 `0x41aadd`、`0x4078a2` 与 `0x407c88` 至 `0x407cb2`。
-- 字符串：exe 中有 `OMP_NUM_THREADS`、`GOMP_SPINCOUNT`、`OMP_DISPLAY_ENV` 等 libgomp 的环境变量名；配置键 `multithread-synthesis`（`0x4ac398`）、值 `on`（`0x4ac33c`）与 `full`（`0x4ac3c4`），均以 UTF-16 存储。
+- 字符串：exe 中有 `OMP_NUM_THREADS`、`GOMP_SPINCOUNT`、`OMP_DISPLAY_ENV` 等 libgomp 的环境变量名。配置键 `multithread-synthesis`（`0x4ac398`）、值 `on`（`0x4ac33c`）与 `full`（`0x4ac3c4`），均以 UTF-16 存储。
 - 公开资料：GCC 6 的 libgomp 源码，`config/mingw32/proc.c`（`count_avail_process_cpus`、`gomp_init_num_threads`、`gomp_dynamic_max_threads`、`omp_get_num_procs`）、`env.c`（`omp_set_num_threads`）、`parallel.c`（`GOMP_parallel`）。
 - 运行时观察（实测，WSL 与 overworld 上的 gdb，脚本 `work/render4/compat-off-mt-off/gomp.py`）：
   - 第 60 步执行 8 个并行区域：`0x416129`、`0x417602`、`0x44e356`（6 次）、`0x45223b`、`0x453d70`、`0x453dda`、`0x4564e0`（2 次）、`0x45b8b9`（5 次），`GOMP_parallel` 的线程数参数均为 0。
-  - 只把 `0x44e356` 的线程数参数改为 8，输出与 8 个处理器时相同；改其余任何一处，输出不变。
+  - 只把 `0x44e356` 的线程数参数改为 8，输出与 8 个处理器时相同。改其余任何一处，输出不变。
   - `0x44d6a6` 入口处，主线程的控制字为 `0x37F`，工作线程均为 `0x27F`。所有线程统一为 `0x37F` 或 `0x27F` 时，16 个与 8 个线程的输出逐字节相同。
-  - `--trace-imports`：16 个处理器时启动 15 个工作线程，8 个时 7 个；`rand` 只由主线程调用，两种情况下都是 45212 次。
+  - `--trace-imports`：16 个处理器时启动 15 个工作线程，8 个时 7 个。`rand` 只由主线程调用，两种情况下都是 45212 次。
   - `OMP_NUM_THREADS` 取 1、2、8、16 时，第 60 步的输出不变。
 - 探针（实测）：`moreloader/tests/probe/msvcrt/MsvcrtProbe.cpp` 的 `probeThreads`，黄金数据 `moreloader/tests/auto/data/msvcrt/threads.txt`。Windows 上以 `CreateThread` 与 msvcrt.dll 的 `_beginthreadex` 创建的新线程，控制字均为 `0x27F`、MXCSR 均为 `0x1F80`，与创建者的控制字（`0x37F` 或 `0x07F`）无关。
 
@@ -72,7 +72,7 @@
 
 - 已修正的函数名：上述 10 个函数，其中 6 个为 libgomp，以 `gomp_` 为前缀。
 - 已修正的数据名：`DAT_004de080_multithreadSynthesis`。
-- 尚未修正但会影响理解的点：`stftForwardParallel` 与 `ompFn` 的参数名与参数结构；`0x42f7b0`（FFT）未命名；`GOMP_parallel` 调用的 4 个内部函数未逐个核对，未命名。
+- 尚未修正但会影响理解的点：`stftForwardParallel` 与 `ompFn` 的参数名与参数结构，未命名的 `0x42f7b0`（FFT），以及 `GOMP_parallel` 调用的 4 个未逐个核对、未命名的内部函数。
 
 ## 对包装层的约束
 

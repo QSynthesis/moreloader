@@ -26,7 +26,7 @@
 | `Kernel32Environment.cpp`（新） | `GetEnvironmentStrings`、`GetEnvironmentStringsW`、`FreeEnvironmentStringsA/W`、`GetEnvironmentVariableA` |
 | `Kernel32Process.cpp` | `GetCommandLineA`、`GetModuleFileNameA`、`GetVersion`、`GetVersionExA`、`LoadLibraryA`、`FreeLibrary`、`ExitProcess` |
 | `Kernel32Memory.cpp` | `HeapCreate`、`HeapDestroy`、`HeapAlloc`、`HeapFree`、`HeapReAlloc` |
-| `Kernel32String.cpp` | `GetACP`、`GetOEMCP`、`GetCPInfo`、`GetStringTypeW`、`LCMapStringW`、`CompareStringW`、`lstrcpyA`；转换函数在缓冲区不足时的部分写入 |
+| `Kernel32String.cpp` | `GetACP`、`GetOEMCP`、`GetCPInfo`、`GetStringTypeW`、`LCMapStringW`、`CompareStringW`、`lstrcpyA`，以及转换函数在缓冲区不足时的部分写入 |
 | `Kernel32File.cpp` | `FindFirstFileA`、`FindClose`、`GetCurrentDirectoryA`、`GetFullPathNameA`、`GetDriveTypeA` |
 | `Kernel32Time.cpp` | `FileTimeToSystemTime`、`FileTimeToLocalFileTime`、`GetTimeZoneInformation` |
 | `Support/CharacterType`（新） | `CT_CTYPE1` 类型、大小写映射与 `NORM_IGNORECASE` 比较，与黄金数据比对 |
@@ -40,7 +40,7 @@
 
 | 地址 | 内容 |
 |---|---|
-| `0x413060` 起 | `_setmbcp`：代码页不在内置表中时调用 `GetCPInfo`；`MaxCharSize` 大于 1 且没有前导字节时把 1–254 标为尾字节，`__mblcid`（`0x420924`）由 `0x413251` 按代码页给出（非 932/936/949/950 时为 0） |
+| `0x413060` 起 | `_setmbcp`：代码页不在内置表中时调用 `GetCPInfo`。`MaxCharSize` 大于 1 且没有前导字节时把 1–254 标为尾字节，`__mblcid`（`0x420924`）由 `0x413251` 按代码页给出（非 932/936/949/950 时为 0） |
 | `0x4132ad` | `setSBUpLow`：把字节 0–255（0 换成空格）以 `__crtGetStringTypeA` 分类，以 `__crtLCMapStringA` 求小写与大写，写入 `_mbctype`（`0x420820`）与 `_mbcasemap`（`0x420720`） |
 | `0x414bfe` | `__crtGetStringTypeA`：先以 `GetStringTypeW(CT_CTYPE1, "", 1, …)` 探测，成功则用 W 版本：`MultiByteToWideChar(code_page, MB_PRECOMPOSED)` 后 `GetStringTypeW` |
 | `0x414d47` | `__crtLCMapStringA`：`LCMapStringW` 后以 `WideCharToMultiByte` 写回 256 字节的缓冲区 |
@@ -54,10 +54,10 @@
 测量系统的 ACP 为 936（`source.txt`）。
 
 - `MultiByteToWideChar(CP_UTF8)` 接受 `MB_PRECOMPOSED` 与 `MB_PRECOMPOSED | MB_ERR_INVALID_CHARS`，结果与 flags 为 0 时相同。文档称 UTF-8 只允许 0 与 `MB_ERR_INVALID_CHARS`，与实测不符。
-- 缓冲区不足时：`MultiByteToWideChar` 写满缓冲区（代理对也会只写入前半）后返回 0 与 122；`WideCharToMultiByte` 只写入完整的字符后返回 0 与 122。此前的实现在失败时不写入，已按实测修正。
-- `GetStringTypeW(CT_CTYPE1)` 与 `LCMapStringW` 对 U+0000–U+00FF 与 U+FFFD 的结果：U+FFFD 为 `C1_DEFINED`，大小写映射为自身；U+00FF 的大写为 U+0178；U+00AA、U+00B5、U+00BA 为小写字母兼标点，没有大写映射。
-- `setSBUpLow` 的完整序列在 UTF-8 下：256 字节转换为 256 个码元（0x80 起每个字节为 U+FFFD）；`WideCharToMultiByte` 写入 254 字节（128 个 ASCII 与 42 个完整的 U+FFFD）后失败，最后 2 字节不写入。这两个字节对应的码元类型没有大小写标志，其 `_mbcasemap` 取 0，因此未写入的字节不影响结果。
-- `CompareStringW(NORM_IGNORECASE)`，LCID 0 与 0x804 结果相同：没有 ASCII 字符被整体忽略；单字符之间只有字母的大小写相等；单字符顺序为控制字符、`'`、`-`、空白、标点、`+<=>`、数字、字母。`A-B` 与 `AB-` 不相等（连字符的权重另计）。flags 为 0 时，相同的串相等，`ab` 小于 `AB`。
+- 缓冲区不足时：`MultiByteToWideChar` 写满缓冲区（代理对也会只写入前半）后返回 0 与 122。`WideCharToMultiByte` 只写入完整的字符后返回 0 与 122。此前的实现在失败时不写入，已按实测修正。
+- `GetStringTypeW(CT_CTYPE1)` 与 `LCMapStringW` 对 U+0000–U+00FF 与 U+FFFD 的结果：U+FFFD 为 `C1_DEFINED`，大小写映射为自身。U+00FF 的大写为 U+0178。U+00AA、U+00B5、U+00BA 为小写字母兼标点，没有大写映射。
+- `setSBUpLow` 的完整序列在 UTF-8 下：256 字节转换为 256 个码元（0x80 起每个字节为 U+FFFD）。`WideCharToMultiByte` 写入 254 字节（128 个 ASCII 与 42 个完整的 U+FFFD）后失败，最后 2 字节不写入。这两个字节对应的码元类型没有大小写标志，其 `_mbcasemap` 取 0，因此未写入的字节不影响结果。
+- `CompareStringW(NORM_IGNORECASE)`，LCID 0 与 0x804 结果相同：没有 ASCII 字符被整体忽略。单字符之间只有字母的大小写相等。单字符顺序为控制字符、`'`、`-`、空白、标点、`+<=>`、数字、字母。`A-B` 与 `AB-` 不相等（连字符的权重另计）。flags 为 0 时，相同的串相等，`ab` 小于 `AB`。
 - `GetFullPathNameA`：26 个输入，规则见 `PathMapping.h` 中 `fullGuestPath` 的说明。缓冲区不足时返回包含结束符的长度，`GetCurrentDirectoryA` 相同。
 
 ## 5. 设计决定与推断
@@ -67,9 +67,9 @@
 - **ANSI 代码页为 UTF-8**（`GetACP` 返回 65001）。主机的文件名与命令行是 UTF-8，与 moresampler 中 `CP_ACP` 按 UTF-8 处理一致。Windows 参考机的 ACP 为 936，两者只在含非 ASCII 字节的文件名与 `_mbs*` 函数上有差别，比较使用的文件名都是 ASCII。
 - **`GetVersion` 返回 6.2，build 9200**：Windows 8 起对没有兼容性清单的程序报告的版本（公开资料）。VC6 的 `__heap_select` 因此选择系统堆，`VirtualAlloc` 不被调用（实测：比较中从未调用）。
 - **堆**：所有堆共用主机的分配器，`HeapAlloc` 总是清零，使读取未初始化内存的客体每次运行结果相同。Windows 不清零，这一点与 Windows 不同，但只影响本身依赖未定义内容的程序。
-- **`CompareStringW` 不相等时的顺序**：按实测的单字符顺序逐位比较，是对默认排序主权重的推断；只在两串都不含控制字符、`'`、`-` 时给出，否则报告并失败。唯一的调用方 `getenv` 只检验相等，失败即「不相等」，结果正确。
-- **时区**：`GetTimeZoneInformation` 只报告当前的偏移，不含夏令时的切换日期；`FileTimeToLocalFileTime` 使用同一偏移（Windows 文档规定使用当前设置）。二者一致，VC6 的 `_stat` 由此得到的时间戳可以还原为 UTC。
-- **驱动器**：`GetDriveTypeA` 只把 `Z:\` 报告为固定磁盘；非当前驱动器的相对路径按该驱动器的根解析，因为加载器不记录每个驱动器的当前目录。
+- **`CompareStringW` 不相等时的顺序**：按实测的单字符顺序逐位比较，是对默认排序主权重的推断。该顺序只在两串都不含控制字符、`'`、`-` 时给出，否则报告并失败。唯一的调用方 `getenv` 只检验相等，失败即「不相等」，结果正确。
+- **时区**：`GetTimeZoneInformation` 只报告当前的偏移，不含夏令时的切换日期。`FileTimeToLocalFileTime` 使用同一偏移（Windows 文档规定使用当前设置）。二者一致，VC6 的 `_stat` 由此得到的时间戳可以还原为 UTC。
+- **驱动器**：`GetDriveTypeA` 只把 `Z:\` 报告为固定磁盘。非当前驱动器的相对路径按该驱动器的根解析，因为加载器不记录每个驱动器的当前目录。
 
 ## 6. 仍未实现的导入
 
@@ -77,7 +77,7 @@
 
 | 函数 | 调用点 | 不需要的理由 |
 |---|---|---|
-| `VirtualAlloc`、`VirtualFree` | 各 4 处 | VC6 小块堆，仅在 `__heap_select` 选择 SBH 时使用；系统版本为 NT 6.2 时选择系统堆（推断，依据 VC6 运行库的公开行为与实测中从未调用） |
+| `VirtualAlloc`、`VirtualFree` | 各 4 处 | VC6 小块堆，仅在 `__heap_select` 选择 SBH 时使用。系统版本为 NT 6.2 时选择系统堆（推断，依据 VC6 运行库的公开行为与实测中从未调用） |
 | `RtlUnwind` | 1 处 | SEH 展开，仅在异常时使用 |
 | `CompareStringA`、`GetStringTypeA`、`LCMapStringA` | 各 2 处 | W 版本的探测失败时的后备路径（静态分析：`0x412e2f`、`0x414c3d` 的探测） |
 | `SetEnvironmentVariableA` | 2 处 | `_putenv` |

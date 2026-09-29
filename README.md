@@ -21,7 +21,7 @@
 | moresampler 0.8.4（`moresampler.exe`） | resampler 模式、wavtool 模式与频率表生成 |
 | UTAU 自带的 resampler（`resampler.exe`，与 UTAU 0.4.18 一同发布） | resampler 模式 |
 
-两个程序都不属于本项目，也不随本项目分发。moresampler 的许可证允许原样再分发，但未经作者许可不得作为其他软件的一部分分发；`resampler.exe` 随 UTAU 发布。请另行取得程序，把可执行文件的路径传给加载器。加载器不修改可执行文件，也不在内存中打补丁。
+两个程序都不属于本项目，也不随本项目分发。moresampler 的许可证允许原样再分发，但未经作者许可不得作为其他软件的一部分分发。`resampler.exe` 随 UTAU 发布。请另行取得程序，把可执行文件的路径传给加载器。加载器不修改可执行文件，也不在内存中打补丁。
 
 ## 构建
 
@@ -50,7 +50,7 @@ moreloader /opt/utau/resampler.exe /voice/a.wav /tmp/out.wav C4 100 "" 0 500 0 0
 moreloader /opt/moresampler/moresampler.exe /voice/a.wav /tmp/out.wav C4 100 "" 0 500 0 0 100 0 '!120' 'AA#5#'
 ```
 
-参数中以 `/` 开头、且在主机上存在或位于已有目录中的，以 Wine 的方式作为 `Z:` 盘上的路径交给程序；其余参数原样传递，因此以 `/` 开头的音高曲线不受影响。
+参数中以 `/` 开头、且在主机上存在或位于已有目录中的，以 Wine 的方式作为 `Z:` 盘上的路径交给程序。其余参数原样传递，因此以 `/` 开头的音高曲线不受影响。
 
 | 选项 | 作用 |
 |---|---|

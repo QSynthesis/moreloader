@@ -16,12 +16,12 @@
 - **只支持 32 位 moresampler 0.8.4**。
 - **仓库独立**：本项目与 frqeditor-reverse 无关，作者新建仓库。
 - **许可证**：moresampler 的 `license.txt` 允许原样再分发，但「作者未许可时不得作为其他软件的一部分分发」。因此：
-  - 不得把 `moresampler.exe` 提交进仓库，不得与加载器一起打包分发；用户自行提供 exe。
+  - 不得把 `moresampler.exe` 提交进仓库，不得与加载器一起打包分发。用户自行提供 exe。
   - 不得修改 exe 文件本身。加载后在内存中打补丁原则上不需要，确需时须先向作者说明。
 - **只用副本**：原件位于 `E:\temp-repos\UTAU\UTAU\tools\moresampler 0.8.4\`，不得在该目录内运行或写入。分析与测试使用复制到仓库 `work/`（加入 `.gitignore`）的副本。
 - **提交**：未经作者明确同意不 commit，从不 push。提交信息为一行英文祈使句，首字母大写，不写正文，不带任何 AI 署名，一个提交只做一件事。
-- **文体**：注释与文档为正式技术文体，不拟人，不写口语；注释用 `///`（声明）与 `//`（实现），不用破折号。
-- **推理原则**：输出与 Windows 不一致时，不得归因于「浮点精度」了事；x87 与 double 的差异只可能造成末位差异，任何可听出的差异或大量字节差异都是逻辑错误（常见原因见第 6 节），必须定位到具体函数。
+- **文体**：注释与文档为正式技术文体，不拟人，不写口语。注释用 `///`（声明）与 `//`（实现），不用破折号。
+- **推理原则**：输出与 Windows 不一致时，不得归因于「浮点精度」了事。x87 与 double 的差异只可能造成末位差异，任何可听出的差异或大量字节差异都是逻辑错误（常见原因见第 6 节），必须定位到具体函数。
 
 ## 3. 已知事实（静态分析，`pefile`）
 
@@ -45,7 +45,9 @@
 
 - `KERNEL32.dll`（60）：AddVectoredExceptionHandler CloseHandle CreateEventA CreateSemaphoreA CreateSemaphoreW DeleteCriticalSection DuplicateHandle EnterCriticalSection FindFirstFileW FindNextFileW GetCommandLineW GetCurrentProcess GetCurrentProcessId GetCurrentThread GetCurrentThreadId GetHandleInformation GetLastError GetModuleFileNameW GetModuleHandleA GetModuleHandleW GetProcAddress GetProcessAffinityMask GetStartupInfoA GetSystemTimeAsFileTime GetThreadContext GetThreadPriority GetTickCount InitializeCriticalSection IsDBCSLeadByteEx IsDebuggerPresent LeaveCriticalSection LockFileEx MultiByteToWideChar OutputDebugStringA QueryPerformanceCounter RaiseException ReleaseSemaphore RemoveVectoredExceptionHandler ResetEvent ResumeThread SetEvent SetLastError SetProcessAffinityMask SetThreadContext SetThreadPriority SetUnhandledExceptionFilter Sleep SuspendThread TerminateProcess TlsAlloc TlsGetValue TlsSetValue TryEnterCriticalSection UnhandledExceptionFilter UnlockFileEx VirtualProtect VirtualQuery WaitForMultipleObjects WaitForSingleObject WideCharToMultiByte
 - `msvcrt.dll`（124）：__dllonexit __getmainargs __initenv __lconv_init __mb_cur_max __set_app_type __setusermatherr _acmdln _amsg_exit _beginthreadex _cexit _endthreadex _errno _exit _fileno _fmode _get_osfhandle _initterm _iob _lock _mbslen _onexit _setjmp3 _snwprintf _strdup _stricmp _strnicmp _ultoa _unlock _vsnwprintf _wcsdup _wfopen _wgetcwd _wstat abort acos asctime asin atof atoi calloc clock cosh exit fclose feof ferror fflush fgetc fgets fopen fprintf fputc fputs fread free freopen frexp fseek ftell fwprintf fwrite getc getchar getenv gmtime isalnum isalpha iscntrl isgraph islower ispunct isspace isupper isxdigit localeconv log10 longjmp malloc memchr memcmp memcpy memmove memset printf putchar puts qsort raise rand realloc setlocale signal sinh sprintf srand strchr strcmp strcoll strcpy strerror strlen strncmp strncpy strpbrk strspn strstr strtol strtoul system tan tanh time tolower toupper vfprintf vprintf wcscat wcscmp wcscpy wcslen wcsncmp wcsncpy wcstol
-- `SHELL32.dll`：CommandLineToArgvW；`SHLWAPI.dll`：PathIsDirectoryW；`USER32.dll`：MessageBoxW
+- `SHELL32.dll`：CommandLineToArgvW
+- `SHLWAPI.dll`：PathIsDirectoryW
+- `USER32.dll`：MessageBoxW
 
 ### 3.3 数据导入
 
@@ -55,8 +57,8 @@
 
 | 平台 | 方案 | 结论 |
 |---|---|---|
-| Linux x86_64 | 加载器编译为 32 位 Linux 程序（`-m32`，非 PIE，避开 `0x400000`–`0x4ed000`）；以 `set_thread_area` 分配一个 GDT 的 TLS 项（该项属于每个线程），每个线程在其中写入自己伪造的 TEB 的基址，装入 FS（i386 glibc 用 GS 作 TLS，FS 空闲）。不使用 `modify_ldt`，因为 FEX-Emu 对 32 位客体的 `modify_ldt` 是中止进程的桩，见 [`20260929-fex.md`](claude/20260929-fex.md) | 里程碑 1 |
-| Linux ARM64 | 同一个 32 位加载器，由 FEX-Emu 或 box64（BOX32）转译运行；FEX-Emu 支持 32 位的 `set_thread_area` 与 `mov fs`（实测），box64 待确认 | 里程碑 2 |
+| Linux x86_64 | 加载器编译为 32 位 Linux 程序（`-m32`，非 PIE，避开 `0x400000`–`0x4ed000`）。以 `set_thread_area` 分配一个 GDT 的 TLS 项（该项属于每个线程），每个线程在其中写入自己伪造的 TEB 的基址，装入 FS（i386 glibc 用 GS 作 TLS，FS 空闲）。不使用 `modify_ldt`，因为 FEX-Emu 对 32 位客体的 `modify_ldt` 是中止进程的桩，见 [`20260929-fex.md`](claude/20260929-fex.md) | 里程碑 1 |
+| Linux ARM64 | 同一个 32 位加载器，由 FEX-Emu 或 box64（BOX32）转译运行。FEX-Emu 支持 32 位的 `set_thread_area` 与 `mov fs`（实测），box64 待确认 | 里程碑 2 |
 | macOS | 不支持（第 1 节） | 不做 |
 
 ## 5. 设计要点
@@ -82,36 +84,36 @@
 
 ### 5.4 调用约定与 ABI
 
-- Windows API（kernel32、shell32、shlwapi、user32）为 `__stdcall`，以 `__attribute__((stdcall))` 实现；msvcrt 为 `__cdecl`，与 i386 Linux 相同。
+- Windows API（kernel32、shell32、shlwapi、user32）为 `__stdcall`，以 `__attribute__((stdcall))` 实现。msvcrt 为 `__cdecl`，与 i386 Linux 相同。
 - 可变参数：i386 上两者的 `va_list` 均为栈上指针，可直接转交。
 - 结构布局以 32 位 Windows 为准：`CRITICAL_SECTION` 24 字节、`WIN32_FIND_DATAW` 592 字节、`FILETIME`、`MEMORY_BASIC_INFORMATION`、`SYSTEM_INFO`、msvcrt 的 `FILE` 32 字节、`struct _stat`（`_wstat` 的 32 位时间版本）、`struct tm`（前 9 个 `int`）、`jmp_buf`。
 - `wchar_t` 在 Windows 为 16 位 UTF-16，在 Linux 为 32 位。所有宽字符函数（`wcs*`、`_wfopen`、`_wstat`、`_snwprintf`、`_vsnwprintf`、`fwprintf`、`_wcsdup`、`_wgetcwd`、`wcstol`、`CommandLineToArgvW`、`GetCommandLineW` 等）必须按 `uint16_t` 自行实现，不得转交 glibc 的 `wcs*`。
-- 宽字符 printf 族须自行解析格式：msvcrt 中宽字符版的 `%s` 表示宽字符串，`%S` 表示窄字符串。数值转换可逐个转交 `snprintf`。窄字符 printf 族须把 msvcrt 特有的长度修饰 `I64`、`I32` 改写为 glibc 的形式；`%Lf` 在 msvcrt 中与 `%f` 相同（`long double` 即 `double`）。
+- 宽字符 printf 族须自行解析格式：msvcrt 中宽字符版的 `%s` 表示宽字符串，`%S` 表示窄字符串。数值转换可逐个转交 `snprintf`。窄字符 printf 族须把 msvcrt 特有的长度修饰 `I64`、`I32` 改写为 glibc 的形式。`%Lf` 在 msvcrt 中与 `%f` 相同（`long double` 即 `double`）。
 
 ### 5.5 msvcrt
 
-- **stdio**：自建 32 字节的 msvcrt `FILE` 数组 `_iob[20]`，前三项对应主机的 stdin、stdout、stderr；`fopen` 等返回自建的 `FILE`，在旁表中记录主机 `FILE *`。所有 stdio 函数先把客体 `FILE *` 映射到主机 `FILE *`。`_fileno`、`_get_osfhandle` 返回可被 `LockFileEx` 识别的句柄。文本模式：msvcrt 的 `fopen` 默认文本模式（`\r\n` 转换），检查 moresampler 以何种模式打开文件，输出比较时注意。
+- **stdio**：自建 32 字节的 msvcrt `FILE` 数组 `_iob[20]`，前三项对应主机的 stdin、stdout、stderr。`fopen` 等返回自建的 `FILE`，在旁表中记录主机 `FILE *`。所有 stdio 函数先把客体 `FILE *` 映射到主机 `FILE *`。`_fileno`、`_get_osfhandle` 返回可被 `LockFileEx` 识别的句柄。文本模式：msvcrt 的 `fopen` 默认文本模式（`\r\n` 转换），检查 moresampler 以何种模式打开文件，输出比较时注意。
 - **errno**：`_errno` 返回每线程变量的地址，主机 errno 值映射到 msvcrt 值（常用值相同，仍须建表）。
-- **启动**：`__getmainargs` 以窄字符串（UTF-8）提供 `argc`、`argv`、`envp`；`_acmdln` 为窄命令行；`__initenv` 为环境；`__set_app_type`、`__setusermatherr`、`__lconv_init`、`_amsg_exit`、`_initterm`、`_onexit`、`__dllonexit`、`_cexit`、`_lock`、`_unlock` 按 MinGW 的 `crtexe.c` 语义实现。
+- **启动**：`__getmainargs` 以窄字符串（UTF-8）提供 `argc`、`argv`、`envp`。`_acmdln` 为窄命令行。`__initenv` 为环境。`__set_app_type`、`__setusermatherr`、`__lconv_init`、`_amsg_exit`、`_initterm`、`_onexit`、`__dllonexit`、`_cexit`、`_lock`、`_unlock` 按 MinGW 的 `crtexe.c` 语义实现。
 - **setjmp**：`_setjmp3` 与 `longjmp` 为一对，均只在客体代码中使用，按 msvcrt 的 `jmp_buf` 布局以汇编自行实现（保存 EBX、ESI、EDI、EBP、ESP、EIP）。
-- **时间**：`time`、`gmtime`、`asctime` 为 32 位 `time_t`；`clock` 的 `CLOCKS_PER_SEC` 在 msvcrt 为 1000。
+- **时间**：`time`、`gmtime`、`asctime` 为 32 位 `time_t`。`clock` 的 `CLOCKS_PER_SEC` 在 msvcrt 为 1000。
 - **数学**：`acos`、`asin`、`cosh`、`sinh`、`tan`、`tanh`、`log10`、`frexp`、`atof` 转交 glibc libm（x87 返回值约定相同）。其余数学函数静态链接在 exe 中。若输出出现末位差异，先比较这些函数在两边的结果，定位到具体调用。
-- **其他**：`malloc` 族、`qsort`、字符分类、`str*` 直接转交；`rand`、`srand` 须实现 msvcrt 的线性同余算法（`seed = seed × 214013 + 2531011`，返回 `(seed >> 16) & 0x7fff`），不得用 glibc 的 `rand`；`system` 记录调用并返回失败，或按需实现；`signal`、`raise` 最小实现；`setlocale`、`localeconv` 返回 C locale。
+- **其他**：`malloc` 族、`qsort`、字符分类、`str*` 直接转交。`rand`、`srand` 须实现 msvcrt 的线性同余算法（`seed = seed × 214013 + 2531011`，返回 `(seed >> 16) & 0x7fff`），不得用 glibc 的 `rand`。`system` 记录调用并返回失败，或按需实现。`signal`、`raise` 最小实现。`setlocale`、`localeconv` 返回 C locale。
 
 ### 5.6 kernel32 等
 
-- **句柄**：统一句柄表，类型有文件、事件、信号量、线程、查找句柄；伪句柄 `GetCurrentProcess() = −1`、`GetCurrentThread() = −2`。`DuplicateHandle`、`GetHandleInformation` 按 winpthreads 的用法实现。
+- **句柄**：统一句柄表，类型有文件、事件、信号量、线程、查找句柄。伪句柄为 `GetCurrentProcess() = −1`、`GetCurrentThread() = −2`。`DuplicateHandle`、`GetHandleInformation` 按 winpthreads 的用法实现。
 - **同步**：`CRITICAL_SECTION`（递归互斥，主机互斥量指针存于结构内）、事件、信号量、`WaitForSingleObject`、`WaitForMultipleObjects`（含等待线程结束），以 pthread 互斥量与条件变量实现。
-- **线程**：`_beginthreadex` 以 pthread 创建线程，栈不小于 `0x200000`；新线程先建 TEB、装 FS、设 x87 控制字与 TLS、调用 TLS 回调，再调用 `__stdcall` 的线程函数。`SuspendThread`、`ResumeThread`、`GetThreadContext`、`SetThreadContext` 为 winpthreads 的取消与信号支持，先实现为记录并返回失败，确认 moresampler 不调用。`SetThreadPriority`、`GetThreadPriority`、`SetProcessAffinityMask` 为无操作；`GetProcessAffinityMask` 按主机进程可用的 CPU 数返回掩码（最多 32 位），不另设限制，与在同一台机器上运行 Windows 相同。moresampler 以其位数作为分析阶段的 OpenMP 线程数（`0x419ae5`），与 `multithread-synthesis` 无关，输出随之变化（见第 6 节第 7 条）。
+- **线程**：`_beginthreadex` 以 pthread 创建线程，栈不小于 `0x200000`。新线程先建 TEB、装 FS、设 x87 控制字与 TLS、调用 TLS 回调，再调用 `__stdcall` 的线程函数。`SuspendThread`、`ResumeThread`、`GetThreadContext`、`SetThreadContext` 为 winpthreads 的取消与信号支持，先实现为记录并返回失败，确认 moresampler 不调用。`SetThreadPriority`、`GetThreadPriority`、`SetProcessAffinityMask` 为无操作。`GetProcessAffinityMask` 按主机进程可用的 CPU 数返回掩码（最多 32 位），不另设限制，与在同一台机器上运行 Windows 相同。moresampler 以其位数作为分析阶段的 OpenMP 线程数（`0x419ae5`），与 `multithread-synthesis` 无关，输出随之变化（见第 6 节第 7 条）。
 - **内存**：`VirtualQuery`、`VirtualProtect` 为 MinGW 伪重定位（`_pei386_runtime_relocator`）所用，按映像的实际映射返回信息并以 `mprotect` 实现。
-- **异常**：`AddVectoredExceptionHandler`、`RemoveVectoredExceptionHandler`、`SetUnhandledExceptionFilter`、`UnhandledExceptionFilter` 记录处理函数；里程碑 1 不模拟 SEH。`RaiseException` 忽略线程命名异常 `0x406D1388`，其余打印后中止。
+- **异常**：`AddVectoredExceptionHandler`、`RemoveVectoredExceptionHandler`、`SetUnhandledExceptionFilter`、`UnhandledExceptionFilter` 记录处理函数。里程碑 1 不模拟 SEH。`RaiseException` 忽略线程命名异常 `0x406D1388`，其余打印后中止。
 - **文件**：`FindFirstFileW`、`FindNextFileW`（`opendir` 加通配符匹配，填 `WIN32_FIND_DATAW`）、`LockFileEx`、`UnlockFileEx`（`fcntl` 记录锁，moresampler 多进程共享 `desc.mrq` 时使用）、`GetModuleFileNameW`（返回 exe 的客体路径，moresampler 据此找到 `moreconfig.txt`）。
-- **编码**：`MultiByteToWideChar`、`WideCharToMultiByte` 支持 `CP_UTF8` 与 `CP_ACP`（`CP_ACP` 按 UTF-8 处理）；`IsDBCSLeadByteEx` 返回假。
+- **编码**：`MultiByteToWideChar`、`WideCharToMultiByte` 支持 `CP_UTF8` 与 `CP_ACP`（`CP_ACP` 按 UTF-8 处理）。`IsDBCSLeadByteEx` 返回假。
 - **其他**：`GetCommandLineW`、`CommandLineToArgvW`（按 Windows 的引号与反斜杠规则）、`PathIsDirectoryW`、`MessageBoxW`（输出到 stderr，返回 `IDOK`）、`GetStartupInfoA`（清零）、`GetSystemTimeAsFileTime`、`QueryPerformanceCounter`、`GetTickCount`、`Sleep`、`TerminateProcess`、`OutputDebugStringA`（调试开关打开时输出）、`IsDebuggerPresent`（假）、`GetModuleHandleA/W`（本 exe 返回 `0x400000`，其他返回空）、`GetProcAddress`（MinGW 运行库会查找 `libgcc_s_dw2-1.dll` 等，返回空）。
 
 ### 5.7 路径
 
-客体看到的是 Windows 路径。采用与 Wine 相同的映射：主机路径 `/a/b` 对客体呈现为 `Z:\a\b`；客体传入的路径在文件 API 中反向映射（`Z:\` 前缀去掉并把 `\` 换成 `/`；相对路径只替换分隔符；`nul` 映射为 `/dev/null`）。命令行参数中以 `/` 开头、且本身存在于主机或位于根目录以外的已有目录中的参数，视为主机绝对路径并转换为 `Z:\…` 形式，其余原样传递。UTAU 的音高曲线可能以 `/` 开头，不得转换（2026-09-29 修正，见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md)）。`GetModuleFileNameW` 与 `_wgetcwd` 返回映射后的路径。
+客体看到的是 Windows 路径。采用与 Wine 相同的映射：主机路径 `/a/b` 对客体呈现为 `Z:\a\b`。客体传入的路径在文件 API 中反向映射（`Z:\` 前缀去掉并把 `\` 换成 `/`，相对路径只替换分隔符，`nul` 映射为 `/dev/null`）。命令行参数中以 `/` 开头、且本身存在于主机或位于根目录以外的已有目录中的参数，视为主机绝对路径并转换为 `Z:\…` 形式，其余原样传递。UTAU 的音高曲线可能以 `/` 开头，不得转换（2026-09-29 修正，见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md)）。`GetModuleFileNameW` 与 `_wgetcwd` 返回映射后的路径。
 
 ## 6. 容易造成输出不一致的原因（先查这些）
 
@@ -120,7 +122,7 @@
 3. 文本模式与二进制模式的换行转换。
 4. 导入的 libm 函数（5.5）的末位差异：先定位到具体调用再处理，不得笼统归因于浮点。
 5. 多线程合成的执行顺序（`multithread-synthesis` 配置）：比较时先关闭多线程，一致后再打开。
-6. 文件中写入的时间戳：`desc.mrq` 的每个条目含写出时刻的 Unix 时间戳（frqeditor-reverse 实测，`third-party/mrq/mrq.h`），比较时排除该字段；`.llsm` 是否含时间戳须先确认。
+6. 文件中写入的时间戳：`desc.mrq` 的每个条目含写出时刻的 Unix 时间戳（frqeditor-reverse 实测，`third-party/mrq/mrq.h`），比较时排除该字段。`.llsm` 是否含时间戳须先确认。
 7. 进程可用的处理器数：moresampler 的输出随处理器数而变，Windows 上同样如此（实测，8 个与 16 个处理器的结果从第 3 步起不同）。原因是主线程的控制字为 `0x37F`（moresampler 启动时调用 `_fpreset`），工作线程为 Windows 新线程默认的 `0x27F`，分析时第一段帧由主线程以 64 位精度计算，段的长度取决于线程数。比较时两侧的处理器数须相同，Windows 以 `start /affinity`、Linux 以 `taskset` 限定。详见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md) 第 7.3 节。
 
 ## 7. 环境

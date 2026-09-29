@@ -31,10 +31,11 @@ namespace more::loader::msvcrt {
             bool binary = false;
         };
 
-        // Parses a mode of fopen or _wfopen with the rules measured for msvcrt.dll: the first
-        // character is r, w or a; then +, b, t, c, n, N, S, R, T and D are accepted. In a
-        // narrow mode a w after an initial r is ignored, which makes "rw" open for reading,
-        // while _wfopen rejects the same mode with EINVAL. Any other character is rejected.
+        // Parses a mode of fopen or _wfopen with the rules measured for msvcrt.dll. The first
+        // character is r, w or a. The characters +, b, t, c, n, N, S, R, T and D are accepted
+        // after it. In a narrow mode a w after an initial r is ignored, which makes "rw" open for
+        // reading, while _wfopen rejects the same mode with EINVAL. Any other character is
+        // rejected.
         template <class Char>
         std::optional<OpenMode> parseMode(const Char *mode, bool wide) {
             OpenMode result;

@@ -35,7 +35,7 @@
 - **本仓库通过 `scripts/BridgeCall.py` 调用 bridge**：`python scripts/BridgeCall.py /endpoint '<json>'`。脚本按工程名与程序名查找会话，因此 Ghidra 重启后不必修改脚本。批量操作可在 Python 中 `from BridgeCall import call`。
 - 耗时较长的 Ghidra 脚本使用 `scripts/BridgeRun.py <script.java> [arg ...] [--timeout <sec>]`，默认超时 1200 秒。`ghidra-re` CLI 的请求超时只有 30 秒。
 - 解释器使用 `D:\usr\tools\miniconda3\envs\venv1\python.exe`，其中有 `requests` 与 `ghidra-re`。
-- **本机环境变量中配置了 HTTP 代理**，发往 `127.0.0.1` 的请求也会被交给代理。`BridgeCall.py` 已关闭 `trust_env`；直接调用 `ghidra-re` CLI 时须设置 `NO_PROXY=127.0.0.1,localhost`，直接使用 `curl` 时加 `--noproxy '*'`。
+- **本机环境变量中配置了 HTTP 代理**，发往 `127.0.0.1` 的请求也会被交给代理。`BridgeCall.py` 已关闭 `trust_env`。直接调用 `ghidra-re` CLI 时须设置 `NO_PROXY=127.0.0.1,localhost`，直接使用 `curl` 时加 `--noproxy '*'`。
 - **在 Git Bash 中调用时**，以 `/` 开头的参数（`/functions/search`、`path=/...`）会被转换成 Windows 路径，须先设置 `MSYS_NO_PATHCONV=1`。PowerShell 不受此影响。
 
 ### `/script/run` 约定
@@ -45,10 +45,10 @@
 - 请求体形如 `{"script":"DumpInstructions.java","write":true,"args":["0x401000","32"]}`。`args` 为位置参数数组。`write=true` 在 bridge 侧是必要的，即使脚本本身只读。
 - 常用脚本（均位于 `common`，用法见 frqeditor-reverse 的 `docs/1-reverse-guide.md`「当前保留的通用脚本」）：
   - 导出与检查：`DecompileFunctionCompat.java`、`BatchDecompileToDir.java`、`DumpFunctionLocals.java`、`DumpHighSymbols.java`、`DumpInstructions.java`、`DumpInsnRange.java`、`ListCodeXrefsTo.java`。
-  - 标量与字符串：`DumpTerminatedStrings.java`、`DumpWideStrings.java`、`DumpDoubleScalarsCompat.java`、`DumpPointerScalarsCompat.java`、`ForceDoubleData.java`；`ra2` 中的 `DumpUintTable.java`。
+  - 标量与字符串：`DumpTerminatedStrings.java`、`DumpWideStrings.java`、`DumpDoubleScalarsCompat.java`、`DumpPointerScalarsCompat.java`、`ForceDoubleData.java`，以及 `ra2` 中的 `DumpUintTable.java`。
   - 改名与签名：`RenameHighVars.java`、`RenameLocalsByName.java`、`RenameSymbolAtAddress.java`、`BulkRenameFunctions.java`、`BulkRenameVars.java`、`SetFunctionSignature.java`、`BulkSetSignatures.java`、`ApplyFunctionSpec.java`、`SetFtolSignature.java`。
   - 类型：`EnsureStruct.java`、`EnsureEnum.java`、`AddEnumMembers.java`、`SetStructFieldType.java`、`ApplyDataTypeAtAddr.java`、`ApplyEnumEquatesInFunction.java`、`ApplyEquateAtCallArg.java`。
-  - 分析辅助：`RunFidAnalyzer.java`、`ForceFid.java`、`ListUnnamedFunctions.java`、`TrivialProbe.java`；`ra2` 中的 `DumpAddressXrefs.java`、`DumpCallGraph.java`、`ScanStructFieldRefs.java`。
+  - 分析辅助：`RunFidAnalyzer.java`、`ForceFid.java`、`ListUnnamedFunctions.java`、`TrivialProbe.java`，以及 `ra2` 中的 `DumpAddressXrefs.java`、`DumpCallGraph.java`、`ScanStructFieldRefs.java`。
 
 ### 反汇编的辅助手段
 
@@ -66,7 +66,7 @@
 
 ## 推荐流程
 
-- 第一轮只选一个足够小的切片，标准是：有明确的字符串、导入调用或状态转换作为锚点；调用链较短；涉及的数据结构局部且可控；修完后能明显改善后续阅读。
+- 第一轮只选一个足够小的切片，标准是：有明确的字符串、导入调用或状态转换作为锚点，调用链较短，涉及的数据结构局部且可控，修完后能明显改善后续阅读。
 - 第一轮的目标是在 Ghidra 工程内修好函数名、参数名与局部变量名、函数签名、关键类型、枚举与结构体字段，以及必要的注释。
 - 修复范围控制为「目标函数加相邻调用链」：目标函数本身，直接调用它的 1 到 2 个函数，它直接调用的 1 到 3 个关键函数，以及少量相关的全局变量或结构体字段。
 - 工程内修复完成后再重新导出 `decomp/` 下的 `.c`，不要只改导出的 `.c`。
@@ -125,8 +125,8 @@ moresampler 静态链接了大量库，这些库不是逆向对象。识别之�
 | msvcrt 导入的跳转桩（`jmp [iat]`） | `imp_` | 导入表 |
 | winpthreads | `pthread_` | mingw-w64 的 winpthreads 源码 |
 | libgcc（`__udivdi3`、`__umoddi3`、DWARF 注册等） | `gcc_` | libgcc 源码 |
-| libgomp（OpenMP 运行库，`omp_*`、`GOMP_*`、`gomp_*`） | `gomp_` | GCC 的 libgomp 源码（`config/mingw32/proc.c` 等）；exe 中的 `OMP_NUM_THREADS` 等字符串。已识别的函数见 [`20260929-openmp-evidence.md`](claude/20260929-openmp-evidence.md) |
-| Lua（oto 生成模式使用） | `lua_` | readme 0.7.2 的更新记录；`setlocale`、`system`、`signal` 等导入的调用者 |
+| libgomp（OpenMP 运行库，`omp_*`、`GOMP_*`、`gomp_*`） | `gomp_` | GCC 的 libgomp 源码（`config/mingw32/proc.c` 等）、exe 中的 `OMP_NUM_THREADS` 等字符串。已识别的函数见 [`20260929-openmp-evidence.md`](claude/20260929-openmp-evidence.md) |
+| Lua（oto 生成模式使用） | `lua_` | readme 0.7.2 的更新记录，以及 `setlocale`、`system`、`signal` 等导入的调用者 |
 | libllsm、libpyin、libgvps、liblrhsmm、WORLD、ciglet 等 | `llsm_`、`pyin_`、`gvps_`、`lrhsmm_`、`world_`、`ciglet_` | `work/moresampler/docs/` 中的许可证与各库的公开源码 |
 
 3. 这些库调用导入函数的方式仍然属于逆向的范围。例如 winpthreads 创建线程时以 `CREATE_SUSPENDED` 调用 `_beginthreadex` 再调用 `ResumeThread`，这决定了包装层必须实现挂起创建。结论记入证据记录，库函数本身不必逐行整理。

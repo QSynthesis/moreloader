@@ -341,7 +341,7 @@ def main():
                 code, out, err, seconds = futures[side].result()
                 lines = (out + err).strip().splitlines()
                 last = lines[-1] if lines else ''
-                log(f'  {side}: exit {code} in {seconds:.1f} s; last line: {last[:200]}')
+                log(f'  {side}: exit {code} in {seconds:.1f} s. Last line: {last[:200]}')
 
     log(f'comparison after {time.monotonic() - total:.1f} s')
     ok = compare_trees()

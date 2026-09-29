@@ -49,12 +49,13 @@ namespace more::loader::msvcrt {
 
     /// Formats \a format with \a arguments as \c vsprintf of msvcrt.dll does.
     ///
-    /// The differences from glibc that affect the output are reproduced: exponents have at least
-    /// three digits; floating-point conversions round the 17 significant digits of the value half
-    /// up rather than rounding the exact binary value; infinities and NaNs are written as
-    /// \c 1.#INF, \c 1.#QNAN, \c 1.#SNAN and \c 1.#IND and rounded as digit strings; \c %p writes
-    /// eight uppercase digits; the length modifiers \c I, \c I32, \c I64 and \c w are accepted;
-    /// \c L denotes \c double; wide arguments are converted in the C locale.
+    /// The differences from glibc that affect the output are reproduced. Exponents have at least
+    /// three digits. Floating-point conversions round the 17 significant digits of the value half
+    /// up rather than rounding the exact binary value. Infinities and NaNs are written as
+    /// \c 1.#INF, \c 1.#QNAN, \c 1.#SNAN and \c 1.#IND and rounded as digit strings. The
+    /// conversion \c %p writes eight uppercase digits. The length modifiers \c I, \c I32, \c I64
+    /// and \c w are accepted. The length modifier \c L denotes \c double. Wide arguments are
+    /// converted in the C locale.
     ///
     /// \sa moreloader/tests/auto/data/msvcrt/printf.txt
     FormatResult<char> formatNarrow(const char *format, GuestArguments &arguments);

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds the 32-bit dependencies of moreloader and installs them into one prefix:
 #   - qmsetup, from a local clone, with its tool qmcorecmd linked statically so that it runs at
-#     build time without the 32-bit dynamic loader;
+#     build time without the 32-bit dynamic loader.
 #   - Boost.Test 1.83 as a static library, for the automatic tests.
 #
 # Usage: scripts/build-i386-deps.sh <qmsetup source directory> [<prefix>]

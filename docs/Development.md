@@ -31,7 +31,7 @@
 
 `MoreLoaderWinAPI` 与 `MoreLoaderCRT` 互不依赖，二者共同需要的设施（句柄、线程、errno 以外的每线程状态）位于 `MoreLoaderRuntime`。它们对外只公开注册函数，以及为测试而公开的纯计算部分（例如 printf 的格式化引擎）。
 
-**不依赖 stdcorelib**（作者 2026-09-29 决定）。HelloUtau 以 stdcorelib 为基础设施；本仓库需要的基础设施只有 Windows 语义的编码转换、命令行拆分与路径映射，其规则都与通用实现不同，在 `MoreLoaderSupport` 中自行实现。
+**不依赖 stdcorelib**（作者 2026-09-29 决定）。HelloUtau 以 stdcorelib 为基础设施。本仓库需要的基础设施只有 Windows 语义的编码转换、命令行拆分与路径映射，其规则都与通用实现不同，在 `MoreLoaderSupport` 中自行实现。
 
 ## 目录与文件
 
@@ -84,7 +84,7 @@ moreloader/tests/manual/                       ← 与 Windows 原生运行的�
 以下名字的拼写由 Windows 规定，不适用上述规则：
 
 - **包装函数**命名为 `<dll>_<导出名>`，DLL 名小写且不带扩展名，导出名保持原样：`kernel32_GetLastError`、`kernel32_WaitForSingleObject`、`msvcrt__beginthreadex`、`msvcrt_fopen`。理由是必须能以导入表中的名字直接检索到实现。包装函数一律定义在各 `.cpp` 的匿名命名空间中，只经由注册表被引用。
-- **客体数据结构**的类型名与字段名沿用 Windows SDK 的拼写，以便与文档对照，类型名加后缀 `32` 表示 32 位布局：写 `CRITICAL_SECTION32`、`TEB32`，字段写 `LockCount`、`OwningThread`。定义集中在 `<moreloader/Runtime/GuestLayout.h>`。这些类型与其余代码一样位于 `more::loader` 中。主机上没有 Windows SDK 的头文件，因此不存在名字冲突；与 glibc 同名的类型（`FILE`、`jmp_buf`）加 `Msvcrt` 前缀，写作 `MsvcrtFILE`。
+- **客体数据结构**的类型名与字段名沿用 Windows SDK 的拼写，以便与文档对照，类型名加后缀 `32` 表示 32 位布局：写 `CRITICAL_SECTION32`、`TEB32`，字段写 `LockCount`、`OwningThread`。定义集中在 `<moreloader/Runtime/GuestLayout.h>`。这些类型与其余代码一样位于 `more::loader` 中。主机上没有 Windows SDK 的头文件，因此不存在名字冲突。与 glibc 同名的类型（`FILE`、`jmp_buf`）加 `Msvcrt` 前缀，写作 `MsvcrtFILE`。
 - 导出的数据变量（`_iob`、`__mb_cur_max`、`_fmode` 等）同样以 `<dll>_<导出名>` 命名。
 
 ## 调用约定与 ABI
@@ -155,7 +155,7 @@ moreloader/tests/manual/                       ← 与 Windows 原生运行的�
 
 ## 构建系统
 
-构建系统使用 qmsetup，写法与 HelloUtau 相同：根目录的 `CMakeLists.txt` 执行 `find_package(qmsetup)` 与 `qm_init_directories()`；`moreloader/conf.cmake` 设置模块常量与 `_moreloader_common_configure_target`，并执行 `qm_setup_build_repo_helpers(moreloader)`；子库以 `moreloader_add_library(... STATIC ...)` 添加，驱动以 `moreloader_add_executable(...)` 添加。
+构建系统使用 qmsetup，写法与 HelloUtau 相同。根目录的 `CMakeLists.txt` 执行 `find_package(qmsetup)` 与 `qm_init_directories()`。`moreloader/conf.cmake` 设置模块常量与 `_moreloader_common_configure_target`，并执行 `qm_setup_build_repo_helpers(moreloader)`。子库以 `moreloader_add_library(... STATIC ...)` 添加，驱动以 `moreloader_add_executable(...)` 添加。
 
 **模块级前缀必须显式指定**，因为 `qm_setup_build_repo_helpers()` 默认取 `PROJECT_NAME`，而子目录中的 `PROJECT_NAME` 已是 `MoreLoaderSupport` 等子库名。
 
@@ -181,7 +181,7 @@ CMake 中判断平台而非编译器。
 |---|---|---|---|
 | 目标平台 | Windows、macOS、Linux，64 位 | 仅 32 位 x86 Linux | 客体是由处理器直接执行的 32 位代码，与加载器共享地址空间与调用约定 |
 | 子库类型 | 动态库，`<目标名>Global.h` 中有导出宏 | 静态库，`<目标名>Global.h` 中只有编译器属性的宏 | 子库只链接进单个可执行文件，加载器以静态链接分发 |
-| 测试框架 | QtTest，每个测试文件一个程序 | Boost.Test，一个程序 | 本仓库不依赖 Qt，32 位构建环境中也没有 Qt；做法与 stdcorelib 相同 |
+| 测试框架 | QtTest，每个测试文件一个程序 | Boost.Test，一个程序 | 本仓库不依赖 Qt，32 位构建环境中也没有 Qt。做法与 stdcorelib 相同 |
 | 依赖的获取 | vcpkg 或分别安装 | `scripts/build-i386-deps.sh` 编译 qmsetup 与 Boost.Test 的 32 位版本 | 系统与 vcpkg 提供的是 64 位版本 |
 | 客体可见的名字 | 无 | 包装函数 `<dll>_<导出名>`，结构体沿用 Windows SDK 的拼写 | 须能以 Windows 的名字直接检索 |
 | 返回约定 | 一律 `std::optional` | 包装函数保持 Windows 的约定 | 返回约定是被模拟的接口的一部分 |

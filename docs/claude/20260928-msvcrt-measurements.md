@@ -16,23 +16,23 @@
 - 17 位有效数字本身是正确舍入的结果，但**恰好位于两个 17 位数正中的值一律舍去**：构造的 120 个中点值全部如此，与末位奇偶无关（`test_Format` 的数据中含这些值）。
 - 指数至少三位（`e+000`）。零的「小数点位置」为 0，使 `%#g` 的零为 `0.000000`，而 `%e` 的零指数固定为 0。
 - 无穷大与 NaN 的数字串为 `1#INF`、`1#QNAN`、`1#SNAN`、`1#IND`（仅 `0xFFF8000000000000`），与普通数字串同样参与舍入，因此 `%.2f` 的无穷大为 `1.#J`，`%.1f` 为 `1.$`。符号取符号位。
-- `%p` 为 8 位大写十六进制，`%#p` 的前缀为大写 `0X`；`%a` 的默认精度为 6；`%5%` 不填充；非法转换字符原样输出且不消耗参数；`%n` 使整个调用返回 -1。
+- `%p` 为 8 位大写十六进制，`%#p` 的前缀为大写 `0X`。`%a` 的默认精度为 6。`%5%` 不填充。非法转换字符原样输出且不消耗参数。`%n` 使整个调用返回 -1。
 - 窄字符格式中的宽字符参数按 C locale 逐字转换，大于 0xFF 的字符使 `%S` 失败（返回 -1，失败前已写出的填充保留），使 `%C` 不输出且不算失败。宽字符格式中的窄字符参数逐字节扩展。
 - `_vsnprintf`：长度小于 count 时写终止符并返回长度，等于 count 时不写终止符并返回长度，大于 count 时写 count 个字符并返回 -1。
 
 ### 其他 CRT 函数
 
 - `qsort`：VS2005 以来 CRT 的快速排序（三数取中，8 个元素以下用选择排序，pivot 随交换移动）。80 组数据的排序结果与比较调用序列全部一致（`qsort.txt`）。
-- `rand`：`seed = seed × 214013 + 2531011`，返回 `(seed >> 16) & 0x7FFF`；新线程的初始种子为 1（`rand.txt`）。
+- `rand`：`seed = seed × 214013 + 2531011`，返回 `(seed >> 16) & 0x7FFF`。新线程的初始种子为 1（`rand.txt`）。
 - `strerror`、`asctime`（日期补零，如 `Jan 02`）、`_ultoa`、`_stricmp`（按小写比较，只返回 ±1）、C locale 的字符分类（只分类 ASCII）均已按实测实现。
-- `atof` 不识别十六进制、`inf`、`nan`；无数字时返回 +0（包括 `-INF`）。两个极端输入的舍入与正确舍入不同，未复现（见 `Numbers.h`）。
-- `strtol` 族：`0x` 后无十六进制数字时结束位置回到开头；`strtoul` 溢出后仍应用负号，`"-2147483649"`（16 进制）得 1。
+- `atof` 不识别十六进制、`inf`、`nan`。无数字时返回 +0（包括 `-INF`）。两个极端输入的舍入与正确舍入不同，未复现（见 `Numbers.h`）。
+- `strtol` 族：`0x` 后无十六进制数字时结束位置回到开头。`strtoul` 溢出后仍应用负号，`"-2147483649"`（16 进制）得 1。
 - `_mbslen` 按 ACP 的双字节规则计数（UTF-8 的「你好」计为 3），取决于测量机器的代码页，尚未决定模拟方式。
 
 ### 文件模式（`fopen.txt`）
 
-- **`_wfopen(L"rw")` 返回 NULL，errno 为 22**；窄字符的 `fopen("rw")` 则按 `r` 打开。moresampler 在 `0x40d5b5` 以 `_wfopen` 和 `"rw"` 打开文件（静态分析），因此在 Windows 上这次打开总是失败，包装层必须同样失败。
-- 文本模式读取把 `\r\n` 变为 `\n`，孤立的 `\r` 保留，`0x1A` 结束读取；写入把 `\n` 变为 `\r\n`。
+- **`_wfopen(L"rw")` 返回 NULL，errno 为 22**。窄字符的 `fopen("rw")` 则按 `r` 打开。moresampler 在 `0x40d5b5` 以 `_wfopen` 和 `"rw"` 打开文件（静态分析），因此在 Windows 上这次打开总是失败，包装层必须同样失败。
+- 文本模式读取把 `\r\n` 变为 `\n`，孤立的 `\r` 保留，`0x1A` 结束读取。写入把 `\n` 变为 `\r\n`。
 - 文本模式下 `ftell` 的结果与原始偏移不一致（`fgets` 读完 `a\n` 后为 4，原始偏移为 3）。moresampler 的文本模式读取只出现在推断属于 Lua 的代码中，暂不模拟。
 
 ### Windows 函数
@@ -44,10 +44,10 @@
 ### 数学函数（`math.txt`、`math-st0.txt`）
 
 - **msvcrt 的数学函数经 `ST0` 返回未舍入的 80 位值**（`tan(0.5)` 的尾数低位为 `…5219`）。moresampler 在返回后继续在 x87 栈上计算，因此包装函数返回 `long double`。
-- 在控制字 `0x27F` 下：`acos`、`asin`、`log10` 的 glibc double 版本与 msvcrt 舍入后一致；`tan`、`tanh`、`sinh`、`cosh` 的 glibc double 版本有大量末位差异。
-- 以 64 位精度计算 `sinhl`、`coshl`、`tanhl` 后舍入为 double，818 个参数全部一致；`tan` 用 `fptan`，除 |x| ≥ 2⁶³ 外一致；`log10l` 与 `fptan` 在 80 位层面也一致。
+- 在控制字 `0x27F` 下：`acos`、`asin`、`log10` 的 glibc double 版本与 msvcrt 舍入后一致。`tan`、`tanh`、`sinh`、`cosh` 的 glibc double 版本有大量末位差异。
+- 以 64 位精度计算 `sinhl`、`coshl`、`tanhl` 后舍入为 double，818 个参数全部一致。`tan` 用 `fptan`，除 |x| ≥ 2⁶³ 外一致。`log10l` 与 `fptan` 在 80 位层面也一致。
 - **`sinh`、`cosh`、`tanh`、`acos` 的 80 位结果与 glibc 不同**（例如 `sinh` 只有 189/820 一致）。msvcrt 由 `0x100a62c1` 的超越函数分派器按描述符（`0x100bcc0a` 起，含名称 `sinh`、`cosh`、`tanh`）选择 x87 算法（静态分析）。
-- 静态分析：除推断属于 Lua 的 `0x4746xx`–`0x474dxx` 外，moresampler 只在 `0x433836` 调用 `sinh`，参数为 k/6（`0x4b9488` 处的 double 为 1/6），推断为 Bark 尺度的逆变换；结果在 x87 栈上乘以常数后存为 float。k/6（k = 0…400）的 401 个参数上，扩展精度实现舍入为 double 后与 msvcrt 全部一致，但 80 位值不完全一致。
+- 静态分析：除推断属于 Lua 的 `0x4746xx`–`0x474dxx` 外，moresampler 只在 `0x433836` 调用 `sinh`，参数为 k/6（`0x4b9488` 处的 double 为 1/6），推断为 Bark 尺度的逆变换。结果在 x87 栈上乘以常数后存为 float。k/6（k = 0…400）的 401 个参数上，扩展精度实现舍入为 double 后与 msvcrt 全部一致，但 80 位值不完全一致。
 
 ## 3. 问题与处理
 
@@ -58,7 +58,7 @@
 
 ## 4. 现状
 
-`test_auto` 包含 11 个测试套件，全部通过：Support 的 `CodePage`、`CommandLine`、`PathMapping`；CRT 的 `Format`、`Sort`、`Random`、`StringFunctions`、`CharacterClass`、`Numbers`、`MathFunctions`。放回缺陷的检验已对 `CommandLine`、`CodePage`、`Format` 进行。
+`test_auto` 包含 11 个测试套件，全部通过：Support 的 `CodePage`、`CommandLine`、`PathMapping`，CRT 的 `Format`、`Sort`、`Random`、`StringFunctions`、`CharacterClass`、`Numbers`、`MathFunctions`。放回缺陷的检验已对 `CommandLine`、`CodePage`、`Format` 进行。
 
 ## 5. 下一步
 
