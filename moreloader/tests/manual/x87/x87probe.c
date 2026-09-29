@@ -6,7 +6,7 @@
  *     gcc -m32 -O0 -static x87probe.c -o x87probe
  *
  * Without multilib, the flags of cmake/toolchains/linux-i386.cmake select the i386 overlay.
- * box32 of box64 requires a dynamically linked build. See docs/20260929-riscv.md. */
+ * box32 of box64 requires a dynamically linked build. See docs/claude/20260929-riscv.md. */
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
