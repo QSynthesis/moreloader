@@ -1,6 +1,10 @@
+#include <string>
+
 #include <boost/test/unit_test.hpp>
 
 #include <moreloader/Support/PathMapping.h>
+
+#include "GoldenData.h"
 
 using namespace more::loader;
 
@@ -44,6 +48,46 @@ BOOST_AUTO_TEST_CASE(test_arguments) {
     BOOST_TEST(guestArgumentFromHost("in.wav") == "in.wav");
     BOOST_TEST(guestArgumentFromHost("AA#5#") == "AA#5#");
     BOOST_TEST(guestArgumentFromHost("") == "");
+}
+
+// fullpath.txt: input, success, result, final component or (null), error. Measured with
+// GetFullPathNameA in a current directory whose path the results replace with <CWD> and whose
+// drive they replace with <D>. The line of .. gives the parent of the current directory.
+BOOST_AUTO_TEST_CASE(test_full_guest_path_matches_windows) {
+    auto lines = golden::read("fullpath.txt");
+    std::string parent;
+    for (auto &fields : lines) {
+        if (golden::unescape(fields[0]) == "..") {
+            parent = golden::unescape(fields[2]);
+        }
+    }
+    BOOST_TEST_REQUIRE(parent.compare(0, 3, "<D>") == 0);
+    // Any drive other than C: serves as the current drive, because only C: is named.
+    const std::string drive = "Q:";
+    const std::string cwd = drive + parent.substr(3) + "\\dir";
+
+    int checked = 0;
+    for (auto &fields : lines) {
+        if (fields[0] == "required" || fields[0] == "getcwd") {
+            continue;
+        }
+        std::string input = golden::unescape(fields[0]);
+        std::string expected = golden::unescape(fields[2]);
+        if (expected.compare(0, 5, "<CWD>") == 0) {
+            expected = cwd + expected.substr(5);
+        } else if (expected.compare(0, 3, "<D>") == 0) {
+            expected = drive + expected.substr(3);
+        }
+        auto result = fullGuestPath(input, cwd);
+        BOOST_TEST_CONTEXT(fields[0]) {
+            BOOST_TEST(fields[1] == "1");
+            BOOST_TEST(result.path == expected);
+            std::string file = result.filePart ? result.path.substr(*result.filePart) : "(null)";
+            BOOST_TEST(file == golden::unescape(fields[3]));
+        }
+        ++checked;
+    }
+    BOOST_TEST(checked == 26);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
