@@ -1,11 +1,13 @@
-# Runs moresampler natively on Windows and through moreloader on Linux with the same arguments,
-# and compares every file that the two runs produce byte by byte.
+# Runs moresampler, or the resampler of UTAU, natively on Windows and through moreloader on Linux
+# with the same arguments, and compares every file that the two runs produce byte by byte.
 #
-#     python compare.py [--voice <voice bank>] [--wav name.wav ...] [--case frq|render|wavtool ...]
+#     python compare.py [--program moresampler|resampler] [--voice <voice bank>]
+#                       [--wav name.wav ...] [--case frq|render|wavtool ...]
 #                       [--host <ssh host> [--runner <command>]]
 #
 # Run on Windows from any directory. The Windows side works in work/compare of the repository:
-#   bin/            moresampler.exe from work/moresampler and a moreconfig.txt for testing
+#   bin/            moresampler.exe from work/moresampler and a moreconfig.txt for testing, or
+#                   resampler.exe from work/resampler
 #   source/         the input voice bank: the selected wav files and their oto.ini lines
 #   windows/        a fresh copy of source/, into which the runs write
 # The Linux side works in ~/moreloader-compare of WSL, with its own bin/ and linux/, because files
@@ -39,6 +41,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..',
 WORK = os.path.join(ROOT, 'work', 'compare')
 PROGRESS = os.path.join(WORK, 'progress.log')
 MORESAMPLER_DIR = os.path.join(ROOT, 'work', 'moresampler')
+RESAMPLER_DIR = os.path.join(ROOT, 'work', 'resampler')
 LOADER = '/mnt/e/GitHub/moreloader/build/out/bin/moreloader'
 BUILT_LOADER = os.path.join(ROOT, 'build', 'out', 'bin', 'moreloader')
 REMOTE_COPY = os.path.join(WORK, 'remote')
@@ -69,6 +72,9 @@ load-frq off
 
 # Home directory on the Linux side, determined at start.
 linuxHome = None
+
+# The program under test: moresampler or resampler.
+program = 'moresampler'
 
 # The ssh host of the Linux side, or None for WSL.
 host = None
@@ -123,9 +129,12 @@ def prepare(voice, wavs):
         if os.path.isdir(os.path.join(WORK, name)):
             shutil.rmtree(os.path.join(WORK, name))
     os.makedirs(os.path.join(WORK, 'bin'))
-    shutil.copy2(os.path.join(MORESAMPLER_DIR, 'moresampler.exe'), os.path.join(WORK, 'bin'))
-    with open(os.path.join(WORK, 'bin', 'moreconfig.txt'), 'w', newline='\r\n') as f:
-        f.write(CONFIG)
+    if program == 'resampler':
+        shutil.copy2(os.path.join(RESAMPLER_DIR, 'resampler.exe'), os.path.join(WORK, 'bin'))
+    else:
+        shutil.copy2(os.path.join(MORESAMPLER_DIR, 'moresampler.exe'), os.path.join(WORK, 'bin'))
+        with open(os.path.join(WORK, 'bin', 'moreconfig.txt'), 'w', newline='\r\n') as f:
+            f.write(CONFIG)
 
     source = os.path.join(WORK, 'source')
     os.makedirs(source)
@@ -160,14 +169,14 @@ def run(side, arguments):
     if side == 'windows':
         voice = os.path.join(WORK, side, 'voice')
         out = os.path.join(WORK, side, 'out')
-        exe = os.path.join(WORK, 'bin', 'moresampler.exe')
+        exe = os.path.join(WORK, 'bin', program + '.exe')
         args = [a.format(voice=voice, out=out, sep='\\') for a in arguments]
         command = [exe] + args
         cwd = out
     else:
         voice = linux_work() + '/linux/voice'
         out = linux_work() + '/linux/out'
-        exe = linux_work() + '/bin/moresampler.exe'
+        exe = linux_work() + '/bin/' + program + '.exe'
         args = [a.format(voice=voice, out=out, sep='/') for a in arguments]
         if host:
             words = runner + [linux_work() + '/moreloader', exe] + args
@@ -253,8 +262,9 @@ def compare_trees():
 
 
 def main():
-    global linuxHome, host, runner
+    global linuxHome, host, runner, program
     parser = argparse.ArgumentParser()
+    parser.add_argument('--program', choices=['moresampler', 'resampler'], default='moresampler')
     parser.add_argument('--voice', default=DEFAULT_VOICE)
     parser.add_argument('--wav', action='append', default=None)
     parser.add_argument('--case', action='append', default=None)
@@ -263,8 +273,9 @@ def main():
     options = parser.parse_args()
     host = options.host
     runner = shlex.split(options.runner)
+    program = options.program
     wavs = options.wav or ['ae.wav', 'baf.wav', 'bam.wav']
-    cases = options.case or ['frq', 'render', 'wavtool']
+    cases = options.case or (['render'] if program == 'resampler' else ['frq', 'render', 'wavtool'])
 
     os.makedirs(WORK, exist_ok=True)
     if os.path.exists(PROGRESS):
@@ -274,6 +285,27 @@ def main():
     prepare(options.voice, wavs)
 
     steps = []
+    if program == 'resampler':
+        # The 13 arguments of UTAU. The first render generates the frequency table _wav.frq,
+        # which the second render of the same file reads. The other renders vary the pitch,
+        # velocity, flags, offset, length, consonant, cutoff, volume, modulation, tempo and
+        # pitch bend. A negative cutoff is avoided, because resampler.exe then dereferences a
+        # null pointer at 0x402cf9 on Windows and through the loader alike.
+        stems = [w[:-4] for w in wavs]
+        variants = [
+            (wavs[0], stems[0] + '_out.wav',
+             ['C4', '100', '', '0', '500', '0', '0', '100', '0', '!120', 'AA#5#']),
+            (wavs[0], stems[0] + '_again.wav',
+             ['C4', '100', '', '0', '500', '0', '0', '100', '0', '!120', 'AA#5#']),
+            (wavs[1], stems[1] + '_out.wav',
+             ['D4', '150', 'g-5', '20', '600', '50', '30', '80', '50', '!140', 'AA#3#ABAC']),
+            (wavs[2], stems[2] + '_out.wav',
+             ['A3', '50', '', '0', '1500', '100', '0', '120', '100', '!90', 'AA#10#']),
+        ]
+        for wav, output, parameters in variants:
+            steps.append(('render ' + wav + ' to ' + output,
+                          ['{voice}{sep}' + wav, '{out}{sep}' + output] + parameters))
+        cases = []
     if 'frq' in cases:
         # The command of frqeditor for generating a frequency table.
         for wav in wavs:
