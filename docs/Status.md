@@ -25,7 +25,9 @@
 - [x] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）：逐字节一致，见 [`20260929-first-comparison.md`](claude/20260929-first-comparison.md)
 - [x] 单个音符的渲染（resampler 模式）：逐字节一致
 - [x] 真实工程的完整渲染：helloutau 生成成对的批处理与 shell 脚本，逐步比较采样。修正以 `/` 开头的音高曲线被当作路径的缺陷后，203 步与最终 wav 全部一致，见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md)
-- [ ] 渲染比较的其余三种 `moreconfig.txt` 组合，以及 FEX 与 qemu-i386 上的同一工程
+- [x] 渲染比较的其余三种 `moreconfig.txt` 组合：WSL 上全部一致
+- [x] FEX 上的同一工程：以 `taskset -c 0-15` 使处理器数与 Windows 相同后，四种组合全部一致。moresampler 的输出随进程可用的处理器数而变，Windows 本身同样如此（8 个与 16 个处理器的结果从第 3 步起不同），比较时两侧的处理器数必须相同，见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md) 第 7 节
+- [x] qemu-i386（dp1000，8 个处理器）上的同一工程（兼容关、多线程开）：与限定 8 个处理器的 Windows 结果全部一致
 - [ ] wavtool 模式的比较
 - [ ] 若比较因 `0x433836` 处 `sinh` 的 80 位结果不一致，按 msvcrt 的 x87 算法复现 `sinh`
 - [ ] README 的构建、用法与许可证说明
