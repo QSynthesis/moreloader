@@ -12,6 +12,8 @@
 #include <moreloader/Runtime/Process.h>
 #include <moreloader/Support/Diagnostics.h>
 
+#include "GuestHeap_p.h"
+
 extern char **environ;
 
 namespace more::loader::msvcrt {
@@ -114,8 +116,8 @@ namespace more::loader::msvcrt {
                                                    std::uint32_t **end) {
             std::lock_guard<std::recursive_mutex> lock(s_exitMutex);
             std::size_t count = *begin ? std::size_t(*end - *begin) : 0;
-            auto table = static_cast<std::uint32_t *>(
-                std::realloc(*begin, (count + 1) * sizeof(std::uint32_t)));
+            auto table = static_cast<std::uint32_t *>(guestReallocate(
+                *begin, (count + 1) * sizeof(std::uint32_t), MORE_RETURN_ADDRESS()));
             if (!table) {
                 return 0;
             }

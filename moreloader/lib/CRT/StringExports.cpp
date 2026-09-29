@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "CharacterClass.h"
+#include "GuestHeap_p.h"
 #include "Numbers.h"
 #include "StringFunctions.h"
 
@@ -11,11 +12,11 @@ namespace more::loader::msvcrt {
 
     namespace {
 
-        // Memory. The guest frees with free what these return, and nothing else allocates
-        // memory that the guest frees, therefore the host allocator serves both.
+        // Memory. The guest frees with free what these return, and every other block that the
+        // guest frees comes from the same heap.
 
         void *MORE_CDECL msvcrt_malloc(std::uint32_t size) {
-            void *p = std::malloc(size);
+            void *p = guestAllocate(size, false, MORE_RETURN_ADDRESS());
             if (!p) {
                 threadErrno() = ErrnoNoMemory;
             }
@@ -23,7 +24,10 @@ namespace more::loader::msvcrt {
         }
 
         void *MORE_CDECL msvcrt_calloc(std::uint32_t count, std::uint32_t size) {
-            void *p = std::calloc(count, size);
+            std::uint64_t total = std::uint64_t(count) * size;
+            void *p = total > 0xFFFFFFFFu
+                          ? nullptr
+                          : guestAllocate(std::size_t(total), true, MORE_RETURN_ADDRESS());
             if (!p) {
                 threadErrno() = ErrnoNoMemory;
             }
@@ -33,10 +37,10 @@ namespace more::loader::msvcrt {
         void *MORE_CDECL msvcrt_realloc(void *pointer, std::uint32_t size) {
             if (size == 0) {
                 // msvcrt frees the block and returns null.
-                std::free(pointer);
+                guestFree(pointer, MORE_RETURN_ADDRESS());
                 return nullptr;
             }
-            void *p = std::realloc(pointer, size);
+            void *p = guestReallocate(pointer, size, MORE_RETURN_ADDRESS());
             if (!p) {
                 threadErrno() = ErrnoNoMemory;
             }
@@ -44,7 +48,7 @@ namespace more::loader::msvcrt {
         }
 
         void MORE_CDECL msvcrt_free(void *pointer) {
-            std::free(pointer);
+            guestFree(pointer, MORE_RETURN_ADDRESS());
         }
 
         // Byte strings. The C library of the host has the same semantics for these.
@@ -115,7 +119,7 @@ namespace more::loader::msvcrt {
                 return nullptr;
             }
             std::size_t size = std::strlen(s) + 1;
-            auto p = static_cast<char *>(std::malloc(size));
+            auto p = static_cast<char *>(guestAllocate(size, false, MORE_RETURN_ADDRESS()));
             if (!p) {
                 threadErrno() = ErrnoNoMemory;
                 return nullptr;

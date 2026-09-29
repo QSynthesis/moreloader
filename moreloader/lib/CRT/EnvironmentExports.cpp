@@ -17,6 +17,7 @@
 #include <moreloader/Support/Diagnostics.h>
 #include <moreloader/Support/PathMapping.h>
 
+#include "GuestHeap_p.h"
 #include "Random.h"
 #include "Sort.h"
 #include "StringFunctions.h"
@@ -194,7 +195,8 @@ namespace more::loader::msvcrt {
             std::size_t needed = guest.size() + 1;
             if (!buffer) {
                 std::size_t allocation = std::max<std::size_t>(needed, std::size_t(std::max(size, 0)));
-                buffer = static_cast<char16_t *>(std::malloc(allocation * sizeof(char16_t)));
+                buffer = static_cast<char16_t *>(
+                    guestAllocate(allocation * sizeof(char16_t), false, MORE_RETURN_ADDRESS()));
                 if (!buffer) {
                     threadErrno() = ErrnoNoMemory;
                     return nullptr;

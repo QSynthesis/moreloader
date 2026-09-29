@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "GuestHeap_p.h"
 #include "Numbers.h"
 
 namespace more::loader::msvcrt {
@@ -72,7 +73,7 @@ namespace more::loader::msvcrt {
                 return nullptr;
             }
             std::size_t size = (length(s) + 1) * sizeof(char16_t);
-            auto p = static_cast<char16_t *>(std::malloc(size));
+            auto p = static_cast<char16_t *>(guestAllocate(size, false, MORE_RETURN_ADDRESS()));
             if (!p) {
                 threadErrno() = ErrnoNoMemory;
                 return nullptr;

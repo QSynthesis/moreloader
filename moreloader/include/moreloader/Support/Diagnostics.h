@@ -13,6 +13,10 @@ namespace more::loader {
         Stubs,
         /// Strings passed to \c OutputDebugStringA.
         DebugStrings,
+        /// Guard bytes after every block of the msvcrt heap, checked when the block is freed or
+        /// resized. The category must be selected before the guest runs, because it changes the
+        /// layout of the blocks.
+        HeapCheck,
     };
 
     /// Enables or disables the output of \a category. All categories are disabled initially.

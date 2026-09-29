@@ -23,6 +23,7 @@ static void printUsage() {
                  "  --trace-imports   Report every call of an imported function\n"
                  "  --trace-stubs     Report calls that the loader implements only partially\n"
                  "  --debug-strings   Report the strings passed to OutputDebugStringA\n"
+                 "  --check-heap      Report writes beyond the end of blocks of the msvcrt heap\n"
                  "  --help            Show this help\n");
 }
 
@@ -40,6 +41,8 @@ int main(int argc, char *argv[]) {
             setDiagnosticEnabled(DiagnosticCategory::Stubs, true);
         } else if (std::strcmp(argv[i], "--debug-strings") == 0) {
             setDiagnosticEnabled(DiagnosticCategory::DebugStrings, true);
+        } else if (std::strcmp(argv[i], "--check-heap") == 0) {
+            setDiagnosticEnabled(DiagnosticCategory::HeapCheck, true);
         } else if (std::strcmp(argv[i], "--help") == 0) {
             printUsage();
             return 0;

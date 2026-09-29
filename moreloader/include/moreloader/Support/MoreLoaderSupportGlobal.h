@@ -6,12 +6,14 @@
 /// with which the probes and editors parse them.
 
 #if defined(_MSC_VER) && !defined(__clang__)
+#  include <intrin.h>
 #  define MORE_PRINTF_FORMAT(formatIndex, firstArgument)
 #  define MORE_PRINTF_FORMAT_STRING _Printf_format_string_
 #  define MORE_NOINLINE             __declspec(noinline)
 #  define MORE_STDCALL              __stdcall
 #  define MORE_CDECL_CONVENTION     __cdecl
 #  define MORE_FORCE_ALIGN_STACK
+#  define MORE_RETURN_ADDRESS()     _ReturnAddress()
 #else
 /// Checks the arguments of a printf-style function against its format string.
 #  define MORE_PRINTF_FORMAT(formatIndex, firstArgument)                                          \
@@ -24,6 +26,9 @@
 /// Realigns the stack on entry. The guest guarantees only 4-byte alignment, while code generated
 /// for i386 Linux assumes 16-byte alignment at every call.
 #  define MORE_FORCE_ALIGN_STACK __attribute__((force_align_arg_pointer))
+/// Returns the return address of the calling function. In a wrapper that the guest calls, it
+/// is the guest code after the call.
+#  define MORE_RETURN_ADDRESS()  __builtin_return_address(0)
 #endif
 
 /// Calling convention of a wrapper that emulates a \c __stdcall function of Windows.
