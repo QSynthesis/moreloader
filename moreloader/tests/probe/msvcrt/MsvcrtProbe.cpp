@@ -13,6 +13,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include <winternl.h>
 #include <xmmintrin.h>
 
 #include <algorithm>
@@ -23,6 +24,9 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+// Index of the static TLS block of this executable, maintained by the C runtime.
+extern "C" ULONG _tls_index;
 
 namespace {
 
@@ -1381,6 +1385,131 @@ namespace {
         }
     }
 
+    // ----------------------------------------------------------------------------------------
+    // Layouts of Windows structures
+    // ----------------------------------------------------------------------------------------
+
+    __declspec(thread) int t_staticTLSVariable = 1;
+
+    // Returns the first offset in [from, to) of the TEB of the calling thread at which the
+    // 32-bit value satisfies matches, or -1.
+    template <class Predicate>
+    long findInTEB(unsigned from, unsigned to, Predicate matches) {
+        auto teb = reinterpret_cast<const DWORD *>(NtCurrentTeb());
+        for (unsigned offset = from; offset < to; offset += 4) {
+            if (matches(teb[offset / 4])) {
+                return long(offset);
+            }
+        }
+        return -1;
+    }
+
+    // layout.txt: <name> <value>, where the name is <struct>.sizeof for the size of a structure
+    // of the SDK, <struct>.<field> for an offset in the SDK, and TEB.<field>.runtime for an
+    // offset in the TEB found by searching for a value that the field holds. The runtime offsets
+    // cover fields that the SDK does not declare.
+    void probeLayout(const std::string &outDir) {
+        Output output(outDir, "layout.txt");
+        auto size = [&](const char *name, size_t value) {
+            output.line({std::string(name) + ".sizeof", std::to_string(value)});
+        };
+        auto offset = [&](const char *name, long value) {
+            output.line({name, std::to_string(value)});
+        };
+
+        size("CRITICAL_SECTION", sizeof(CRITICAL_SECTION));
+        size("MEMORY_BASIC_INFORMATION", sizeof(MEMORY_BASIC_INFORMATION));
+        size("FILETIME", sizeof(FILETIME));
+        size("WIN32_FIND_DATAW", sizeof(WIN32_FIND_DATAW));
+        offset("WIN32_FIND_DATAW.cFileName", long(offsetof(WIN32_FIND_DATAW, cFileName)));
+        size("WIN32_FIND_DATAA", sizeof(WIN32_FIND_DATAA));
+        offset("WIN32_FIND_DATAA.cFileName", long(offsetof(WIN32_FIND_DATAA, cFileName)));
+        size("SYSTEMTIME", sizeof(SYSTEMTIME));
+        size("TIME_ZONE_INFORMATION", sizeof(TIME_ZONE_INFORMATION));
+        size("OVERLAPPED", sizeof(OVERLAPPED));
+        size("STARTUPINFOA", sizeof(STARTUPINFOA));
+        size("OSVERSIONINFOA", sizeof(OSVERSIONINFOA));
+        size("CPINFO", sizeof(CPINFO));
+
+        offset("TEB.ExceptionList", long(offsetof(NT_TIB, ExceptionList)));
+        offset("TEB.StackBase", long(offsetof(NT_TIB, StackBase)));
+        offset("TEB.StackLimit", long(offsetof(NT_TIB, StackLimit)));
+        offset("TEB.Self", long(offsetof(NT_TIB, Self)));
+
+        DWORD teb = DWORD(reinterpret_cast<uintptr_t>(NtCurrentTeb()));
+        DWORD processID = GetCurrentProcessId();
+        DWORD threadID = GetCurrentThreadId();
+        offset("TEB.Self.runtime", findInTEB(0, 0x40, [&](DWORD v) { return v == teb; }));
+        offset("TEB.UniqueProcess.runtime",
+               findInTEB(0, 0x40, [&](DWORD v) { return v == processID; }));
+        offset("TEB.UniqueThread.runtime",
+               findInTEB(0, 0x40, [&](DWORD v) { return v == threadID; }));
+
+        // The TLS array holds at _tls_index the block that contains the static TLS variable.
+        DWORD variable = DWORD(reinterpret_cast<uintptr_t>(&t_staticTLSVariable));
+        offset("TEB.ThreadLocalStoragePointer.runtime", findInTEB(0, 0x40, [&](DWORD v) {
+                   if (v == 0 || IsBadReadPtr(reinterpret_cast<void *>(uintptr_t(v)), 64)) {
+                       return false;
+                   }
+                   DWORD block = reinterpret_cast<const DWORD *>(uintptr_t(v))[_tls_index];
+                   return variable >= block && variable < block + 0x1000;
+               }));
+
+        DWORD peb = DWORD(reinterpret_cast<uintptr_t>(NtCurrentTeb()->ProcessEnvironmentBlock));
+        offset("TEB.ProcessEnvironmentBlock", long(offsetof(TEB, ProcessEnvironmentBlock)));
+        offset("PEB.ImageBaseAddress.runtime", [&] {
+            DWORD module = DWORD(reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr)));
+            auto p = reinterpret_cast<const DWORD *>(uintptr_t(peb));
+            for (unsigned i = 0; i < 0x40 / 4; ++i) {
+                if (p[i] == module) {
+                    return long(i * 4);
+                }
+            }
+            return -1L;
+        }());
+
+        SetLastError(0x13572468);
+        offset("TEB.LastErrorValue.runtime",
+               findInTEB(0, 0x100, [](DWORD v) { return v == 0x13572468; }));
+
+        offset("TEB.TlsSlots", long(offsetof(TEB, TlsSlots)));
+        DWORD slot = TlsAlloc();
+        TlsSetValue(slot, reinterpret_cast<void *>(uintptr_t(0x24681357)));
+        long found = findInTEB(0, 0x1000, [](DWORD v) { return v == 0x24681357; });
+        offset("TEB.TlsSlots.runtime", found < 0 ? -1 : found - long(4 * slot));
+        TlsFree(slot);
+
+        // Slots from 64 on live in an array that TlsExpansionSlots points to.
+        offset("TEB.TlsExpansionSlots", long(offsetof(TEB, TlsExpansionSlots)));
+        std::vector<DWORD> slots;
+        DWORD expansion = TLS_OUT_OF_INDEXES;
+        while (true) {
+            DWORD s = TlsAlloc();
+            if (s == TLS_OUT_OF_INDEXES) {
+                break;
+            }
+            slots.push_back(s);
+            if (s >= 64) {
+                expansion = s;
+                break;
+            }
+        }
+        long expansionOffset = -1;
+        if (expansion != TLS_OUT_OF_INDEXES) {
+            TlsSetValue(expansion, reinterpret_cast<void *>(uintptr_t(0x35792468)));
+            expansionOffset = findInTEB(0xF00, 0x1000, [&](DWORD v) {
+                if (v == 0 || IsBadReadPtr(reinterpret_cast<void *>(uintptr_t(v)), 4096)) {
+                    return false;
+                }
+                return reinterpret_cast<const DWORD *>(uintptr_t(v))[expansion - 64] == 0x35792468;
+            });
+        }
+        offset("TEB.TlsExpansionSlots.runtime", expansionOffset);
+        for (DWORD s : slots) {
+            TlsFree(s);
+        }
+    }
+
 }
 
 int main(int argc, char *argv[]) {
@@ -1428,5 +1557,6 @@ int main(int argc, char *argv[]) {
     probeNls(outDir);
     probeFullPath(outDir, scratch);
     probeThreads(outDir);
+    probeLayout(outDir);
     return 0;
 }
