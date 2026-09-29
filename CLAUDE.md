@@ -4,7 +4,7 @@
 
 ## 项目目标
 
-moreloader 是不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，使未经修改的 `moresampler.exe`（0.8.4，32 位）在 Linux 上作为命令行程序运行，输出与 Windows 原生运行逐字节相同。里程碑 1 为 Linux x86_64（以 32 位进程运行），里程碑 2 为 Linux ARM64（经 FEX-Emu 或 box64 的 32 位模式）。macOS 与 64 位 moresampler 不在范围内。
+moreloader 是不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，使未经修改的 `moresampler.exe`（0.8.4，32 位）在 Linux 上作为命令行程序运行，输出与 Windows 原生运行逐字节相同。里程碑 1 为 Linux x86_64（以 32 位进程运行），里程碑 2 为 Linux ARM64（经 FEX-Emu 或 box64 的 32 位模式）。macOS 与 64 位 moresampler 不在范围内。作者 2026-09-29 追加 UTAU 自带的 `resampler.exe`（VC6 编译，只导入 kernel32），标准相同。
 
 目标、范围、交付物与验收标准**以 [`docs/TaskSpec.md`](docs/TaskSpec.md) 为唯一权威**。该文档与代码冲突时修改代码；确需修改设计时，先与作者确认。
 

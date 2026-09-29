@@ -8,6 +8,7 @@
 
 - 里程碑 1（本任务书的交付范围）：Linux x86_64（以 32 位进程运行）跑通 resampler 模式与 wavtool 模式，并与 Windows 原生运行的输出逐字节比较。
 - 里程碑 2（之后）：Linux ARM64 上经 x86 转译器（FEX-Emu 或 box64 的 32 位模式）运行同一个加载器。
+- 追加（作者 2026-09-29 决定）：UTAU 自带的 `resampler.exe`（Visual C++ 6 编译，C 运行库静态链接，只导入 kernel32），以相同的逐字节标准支持，见 [`20260929-resampler.md`](20260929-resampler.md)。
 - 不做：macOS（10.15 起不能运行 32 位进程，Rosetta 2 不转译 32 位代码）、64 位 moresampler（作者手上只有 32 位版，决定只支持 32 位）、图形界面、moresampler 的 oto 自动生成模式（可以顺带支持，不作为验收项）。
 
 ## 2. 作者的决定与约束

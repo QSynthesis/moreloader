@@ -29,6 +29,12 @@
 - [ ] 若比较因 `0x433836` 处 `sinh` 的 80 位结果不一致，按 msvcrt 的 x87 算法复现 `sinh`
 - [ ] README 的构建、用法与许可证说明
 
+UTAU 自带的 `resampler.exe`（作者 2026-09-29 决定支持）：
+
+- [x] kernel32 的文件句柄、堆、环境变量、代码页与字符分类、`_stat` 所需的函数，按实测实现，见 [`20260929-resampler.md`](20260929-resampler.md)
+- [x] 4 次渲染（含复用 `.frq`、flags、调制、拉伸）的 11 个文件与 Windows 逐字节一致，WSL 与 FEX 均如此
+- UTAU 自带的 `wavtool.exe` 不支持（作者 2026-09-29 决定）。
+
 里程碑 2（Linux ARM64，经 FEX-Emu 或 box64）：
 
 - 环境：`ssh spark`（aarch64），FEX 位于 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`。
