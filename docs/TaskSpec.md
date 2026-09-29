@@ -102,7 +102,7 @@
 
 - **句柄**：统一句柄表，类型有文件、事件、信号量、线程、查找句柄；伪句柄 `GetCurrentProcess() = −1`、`GetCurrentThread() = −2`。`DuplicateHandle`、`GetHandleInformation` 按 winpthreads 的用法实现。
 - **同步**：`CRITICAL_SECTION`（递归互斥，主机互斥量指针存于结构内）、事件、信号量、`WaitForSingleObject`、`WaitForMultipleObjects`（含等待线程结束），以 pthread 互斥量与条件变量实现。
-- **线程**：`_beginthreadex` 以 pthread 创建线程，栈不小于 `0x200000`；新线程先建 TEB、装 FS、设 x87 控制字与 TLS、调用 TLS 回调，再调用 `__stdcall` 的线程函数。`SuspendThread`、`ResumeThread`、`GetThreadContext`、`SetThreadContext` 为 winpthreads 的取消与信号支持，先实现为记录并返回失败，确认 moresampler 不调用。`SetThreadPriority`、`GetThreadPriority`、`SetProcessAffinityMask` 为无操作；`GetProcessAffinityMask` 按 CPU 数返回掩码（决定 moresampler 的线程数）。
+- **线程**：`_beginthreadex` 以 pthread 创建线程，栈不小于 `0x200000`；新线程先建 TEB、装 FS、设 x87 控制字与 TLS、调用 TLS 回调，再调用 `__stdcall` 的线程函数。`SuspendThread`、`ResumeThread`、`GetThreadContext`、`SetThreadContext` 为 winpthreads 的取消与信号支持，先实现为记录并返回失败，确认 moresampler 不调用。`SetThreadPriority`、`GetThreadPriority`、`SetProcessAffinityMask` 为无操作；`GetProcessAffinityMask` 按主机进程可用的 CPU 数返回掩码（最多 32 位），不另设限制，与在同一台机器上运行 Windows 相同。moresampler 以其位数作为分析阶段的 OpenMP 线程数（`0x419ae5`），与 `multithread-synthesis` 无关，输出随之变化（见第 6 节第 7 条）。
 - **内存**：`VirtualQuery`、`VirtualProtect` 为 MinGW 伪重定位（`_pei386_runtime_relocator`）所用，按映像的实际映射返回信息并以 `mprotect` 实现。
 - **异常**：`AddVectoredExceptionHandler`、`RemoveVectoredExceptionHandler`、`SetUnhandledExceptionFilter`、`UnhandledExceptionFilter` 记录处理函数；里程碑 1 不模拟 SEH。`RaiseException` 忽略线程命名异常 `0x406D1388`，其余打印后中止。
 - **文件**：`FindFirstFileW`、`FindNextFileW`（`opendir` 加通配符匹配，填 `WIN32_FIND_DATAW`）、`LockFileEx`、`UnlockFileEx`（`fcntl` 记录锁，moresampler 多进程共享 `desc.mrq` 时使用）、`GetModuleFileNameW`（返回 exe 的客体路径，moresampler 据此找到 `moreconfig.txt`）。
@@ -121,6 +121,7 @@
 4. 导入的 libm 函数（5.5）的末位差异：先定位到具体调用再处理，不得笼统归因于浮点。
 5. 多线程合成的执行顺序（`multithread-synthesis` 配置）：比较时先关闭多线程，一致后再打开。
 6. 文件中写入的时间戳：`desc.mrq` 的每个条目含写出时刻的 Unix 时间戳（frqeditor-reverse 实测，`third-party/mrq/mrq.h`），比较时排除该字段；`.llsm` 是否含时间戳须先确认。
+7. 进程可用的处理器数：moresampler 的输出随处理器数而变，Windows 上同样如此（实测，8 个与 16 个处理器的结果从第 3 步起不同）。原因是主线程的控制字为 `0x37F`（moresampler 启动时调用 `_fpreset`），工作线程为 Windows 新线程默认的 `0x27F`，分析时第一段帧由主线程以 64 位精度计算，段的长度取决于线程数。比较时两侧的处理器数须相同，Windows 以 `start /affinity`、Linux 以 `taskset` 限定。详见 [`20260929-render-comparison.md`](claude/20260929-render-comparison.md) 第 7.3 节。
 
 ## 7. 环境
 
@@ -136,7 +137,7 @@
    - 频率表生成：`"<wav>" nul 100 100 GN 0 50`（frqeditor 的生成命令），比较 `desc.mrq`（排除时间戳）与 `.llsm`。
    - 渲染：UTAU resampler 约定的 13 个参数，例如 `in.wav out.wav C4 100 "" 0 500 0 0 100 0 !120 AA#5#`，比较 `out.wav`。
    - wavtool 模式：按 moresampler 的 wavtool 参数串接两个音符，比较输出。
-4. 通过条件：输出逐字节相同（时间戳字段除外）。不一致时按第 6 节定位，并在 `docs/` 中记录原因与处理。
+4. 通过条件：两侧进程可用的处理器数相同时，输出逐字节相同（时间戳字段除外）。不一致时按第 6 节定位，并在 `docs/` 中记录原因与处理。
 5. 文档：`docs/` 下的设计说明与工作日志（每步做了什么、问题、现状、下一步），以及 README（构建、用法、许可证说明：moresampler 由用户自备）。
 
 ## 9. 参考

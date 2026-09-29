@@ -10,6 +10,8 @@
 | Linux ARM64 | FEX-Emu | 逐字节一致 |
 | Linux RISC-V | qemu-i386 加 [`third-party/qemu`](third-party/qemu/README.md) 的补丁 | 逐字节一致 |
 
+以上比较的前提是两侧进程可用的处理器数相同。moresampler 的输出随处理器数而变，在 Windows 上同样如此：同一台 Windows 机器限定 8 个处理器与使用 16 个处理器时，渲染结果不同。加载器按主机的处理器数运行，结果与在同一台机器上运行 Windows 版相同。原因见 [docs/claude/20260929-render-comparison.md](docs/claude/20260929-render-comparison.md) 第 7.3 节。
+
 详见 [docs/Status.md](docs/Status.md)。
 
 ## 支持的程序
