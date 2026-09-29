@@ -44,10 +44,29 @@ BOOST_AUTO_TEST_CASE(test_round_trip) {
 }
 
 BOOST_AUTO_TEST_CASE(test_arguments) {
-    BOOST_TEST(guestArgumentFromHost("/tmp/in.wav") == "Z:\\tmp\\in.wav");
-    BOOST_TEST(guestArgumentFromHost("in.wav") == "in.wav");
-    BOOST_TEST(guestArgumentFromHost("AA#5#") == "AA#5#");
-    BOOST_TEST(guestArgumentFromHost("") == "");
+    // The host has /tmp, /tmp/in.wav and /home/user/out, but not /home/user/out/new.wav.
+    auto exists = [](const std::string &path) {
+        return path == "/tmp" || path == "/tmp/in.wav" || path == "/home" || path == "/home/user" ||
+               path == "/home/user/out";
+    };
+    BOOST_TEST(guestArgumentFromHost("/tmp/in.wav", exists) == "Z:\\tmp\\in.wav");
+    BOOST_TEST(guestArgumentFromHost("/home/user/out/new.wav", exists) ==
+               "Z:\\home\\user\\out\\new.wav");
+    BOOST_TEST(guestArgumentFromHost("in.wav", exists) == "in.wav");
+    BOOST_TEST(guestArgumentFromHost("AA#5#", exists) == "AA#5#");
+    BOOST_TEST(guestArgumentFromHost("", exists) == "");
+    // Pitch bend strings whose first value is negative, from the render comparison of
+    // helloutau. The first names no directory, the second a file in the root.
+    BOOST_TEST(guestArgumentFromHost("/N/i/y/8AA#36#ABANAtBf", exists) == "/N/i/y/8AA#36#ABANAtBf");
+    BOOST_TEST(guestArgumentFromHost("/2AA#30#", exists) == "/2AA#30#");
+    BOOST_TEST(
+        guestArgumentFromHost("/n/r/w/0/4/9AAAEAHAJAKALAMAMALAKAJAHAGAEADABAA#54#", exists) ==
+        "/n/r/w/0/4/9AAAEAHAJAKALAMAMALAKAJAHAGAEADABAA#54#");
+    // The root never counts as the directory of an argument, even if every directory exists.
+    auto everyDirectory = [](const std::string &path) {
+        return path.find('#') == std::string::npos;
+    };
+    BOOST_TEST(guestArgumentFromHost("/2AA#30#", everyDirectory) == "/2AA#30#");
 }
 
 // fullpath.txt: input, success, result, final component or (null), error. Measured with

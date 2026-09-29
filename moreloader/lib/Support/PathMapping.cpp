@@ -85,11 +85,18 @@ namespace more::loader {
         return out;
     }
 
-    std::string guestArgumentFromHost(std::string_view argument) {
-        if (!argument.empty() && argument[0] == '/') {
+    std::string guestArgumentFromHost(std::string_view argument,
+                                      const std::function<bool(const std::string &)> &exists) {
+        if (argument.empty() || argument[0] != '/') {
+            return std::string(argument);
+        }
+        std::string path(argument);
+        std::size_t slash = path.find_last_of('/');
+        bool inDirectory = slash > 0 && exists(path.substr(0, slash));
+        if (exists(path) || inDirectory) {
             return guestPathFromHost(argument);
         }
-        return std::string(argument);
+        return path;
     }
 
     FullGuestPath fullGuestPath(std::string_view path, std::string_view currentDirectory) {

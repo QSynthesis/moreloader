@@ -144,7 +144,9 @@ namespace more::loader {
         m_arguments.push_back(modulePath);
         std::vector<std::u16string> wideArguments = {m_modulePath};
         for (const std::string &argument : options.arguments) {
-            std::string guest = guestArgumentFromHost(argument);
+            std::string guest = guestArgumentFromHost(argument, [](const std::string &path) {
+                return ::access(path.c_str(), F_OK) == 0;
+            });
             m_arguments.push_back(guest);
             wideArguments.push_back(multiByteToWide(guest).text);
         }

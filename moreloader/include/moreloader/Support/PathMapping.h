@@ -1,6 +1,7 @@
 #ifndef MORELOADER_SUPPORT_PATHMAPPING_H
 #define MORELOADER_SUPPORT_PATHMAPPING_H
 
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -25,10 +26,16 @@ namespace more::loader {
 
     /// Returns the guest form of the command-line argument \a argument.
     ///
-    /// An argument that begins with a slash is taken to be an absolute host path and is mapped
-    /// by guestPathFromHost(). Any other argument is returned unchanged, because it may be a
-    /// flag string of the resampler that contains slashes.
-    std::string guestArgumentFromHost(std::string_view argument);
+    /// An argument is mapped by guestPathFromHost() if it begins with a slash and either names
+    /// an existing host path or lies in an existing directory other than the root, as
+    /// \a exists reports. Any other argument is returned unchanged. The pitch bend string of
+    /// the resampler begins with a slash if its first value is negative, such as
+    /// <tt>/N/i/y/8AA#36#</tt>, and must reach the guest unchanged. An output file lies in a
+    /// directory that the caller has created.
+    ///
+    /// \sa docs/claude/20260929-render-comparison.md
+    std::string guestArgumentFromHost(std::string_view argument,
+                                      const std::function<bool(const std::string &)> &exists);
 
     /// Result of fullGuestPath().
     struct FullGuestPath {

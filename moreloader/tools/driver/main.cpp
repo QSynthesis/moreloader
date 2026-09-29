@@ -13,11 +13,12 @@ using namespace more::loader;
 
 static void printUsage() {
     std::fprintf(stderr,
-                 "Usage: moreloader [options] <moresampler.exe> [arguments...]\n"
+                 "Usage: moreloader [options] <moresampler.exe | resampler.exe> [arguments...]\n"
                  "\n"
-                 "Runs the 32-bit moresampler 0.8.4 on Linux. The arguments after the executable\n"
-                 "are passed to it. Absolute host paths among them are presented to it as paths\n"
-                 "on drive Z:.\n"
+                 "Runs the 32-bit moresampler 0.8.4 or the resampler of UTAU on Linux. The\n"
+                 "arguments after the executable are passed to it. An argument that begins with\n"
+                 "a slash and names an existing host path, or a file in an existing directory,\n"
+                 "is presented as a path on drive Z:.\n"
                  "\n"
                  "Options:\n"
                  "  --trace-imports   Report every call of an imported function\n"
