@@ -41,6 +41,11 @@ add_link_options(-no-pie)
 
 if(MORE_STATIC)
     add_link_options(-static)
+else()
+    # box32 of box64 runs only dynamically linked programs and replaces the C library with the
+    # native one, but provides no C++ runtime. Only the C library is therefore linked
+    # dynamically.
+    add_link_options(-static-libstdc++ -static-libgcc)
 endif()
 
 if(MORE_INSTALL)
