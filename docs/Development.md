@@ -173,6 +173,8 @@ CMake 中判断平台而非编译器。
 - 自动测试使用 Boost.Test，组织方式与 stdcorelib（`D:\GitHub\stdcorelib\tests\auto`）相同：`moreloader/tests/auto/` 编译为一个程序 `test_auto`，`main.cpp` 只定义 `BOOST_TEST_MAIN`，每个测试文件是一个 `BOOST_AUTO_TEST_SUITE`。
 - 测试文件的目录与 `include/moreloader/` 相同，一个 `test_XXX.cpp` 对应一个 `XXX.h`，测试套件名与文件名相同。
 - 与 Windows 原生运行的比较放在 `moreloader/tests/manual/`，不纳入 ctest，见 `CLAUDE.md`「构建与验证」。
+- 需要用户自备的 exe 的自动测试以 CMake 缓存变量 `MORE_TEST_MORESAMPLER_EXE`、`MORE_TEST_RESAMPLER_EXE` 取得路径，以 Boost.Test 的 `precondition` 在路径缺失时跳过，见 `moreloader/tests/auto/ExecutableImports.h`。
+- 需要检查标准错误或进程终止的测试使用 `moreloader/tests/auto/ProcessTools.h`（重定向标准错误，在 `fork` 出的子进程中运行）。需要 PE 文件的测试以 `moreloader/tests/auto/PEBuilder.h` 在测试中构造，不依赖外部文件。
 - msvcrt 行为的黄金数据（探针在 Windows 上的输出）与生成它的探针源码一起保存在 `moreloader/tests/`，并在数据文件旁写明生成步骤。
 
 ## 与 HelloUtau 的差异

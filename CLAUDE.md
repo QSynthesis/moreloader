@@ -127,6 +127,7 @@ ctest --test-dir build --no-tests=error
 - **一个 `test_XXX.cpp` 对应一个 `XXX.h`**，目录结构与 `include/moreloader/` 相同：`tests/auto/Support/test_Utf16.cpp` 对应 `include/moreloader/Support/Utf16.h`。这样只看目录列表即可知道哪些头文件尚无测试。
 - `ctest` 找不到任何测试时同样以 0 退出，运行时加 `--no-tests=error`。
 - 与 Windows 原生运行的逐字节比较需要用户自备的 exe 与音源，不纳入 ctest，放在 `moreloader/tests/manual/`，步骤与结果记入工作日志。比较时先关闭多线程合成，一致后再打开。
+- 导出注册的测试（`test_CRTExports`、`test_WinAPIExports`）在运行时读取用户自备的 exe 的导入表，路径以 `-DMORE_TEST_MORESAMPLER_EXE=<路径>`、`-DMORE_TEST_RESAMPLER_EXE=<路径>` 传给 CMake。未传入或无法读取时，这些用例在报告中列为跳过。仓库中不保存从 exe 派生的数据。
 - **确认测试通过之前，先确认构建的退出码为 0。** 构建失败时 ctest 运行的是上一次构建的旧程序，会给出虚假的通过结果。
 - 新增测试后确认断言确实被执行，空的测试集同样会「通过」。
 - 区分断言的是当前行为还是设计意图。测试可能只是将缺陷固化了下来。

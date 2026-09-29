@@ -21,9 +21,18 @@ moreloader_add_executable(${PROJECT_NAME} TEST CONSOLE
         MoreLoaderWinAPI MoreLoaderCRT
 )
 
+# The executables that the user provides. The tests of the export registration read their import
+# tables at run time and are reported as skipped if a path is empty or unreadable.
+set(MORE_TEST_MORESAMPLER_EXE "" CACHE FILEPATH
+    "moresampler.exe 0.8.4, read by the tests of the export registration")
+set(MORE_TEST_RESAMPLER_EXE "" CACHE FILEPATH
+    "resampler.exe of UTAU, read by the tests of the export registration")
+
 # Golden data measured on Windows by moreloader/tests/probe, read from the source tree.
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     MORE_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+    MORE_TEST_MORESAMPLER_EXE="${MORE_TEST_MORESAMPLER_EXE}"
+    MORE_TEST_RESAMPLER_EXE="${MORE_TEST_RESAMPLER_EXE}"
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
