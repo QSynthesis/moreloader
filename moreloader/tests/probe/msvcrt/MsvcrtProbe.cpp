@@ -13,6 +13,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include <xmmintrin.h>
 
 #include <algorithm>
 #include <cmath>
@@ -701,6 +702,73 @@ namespace {
     }
 
     // ----------------------------------------------------------------------------------------
+    // Floating-point state of new threads
+    // ----------------------------------------------------------------------------------------
+
+    unsigned short readControlWord() {
+        unsigned short cw;
+        __asm { fnstcw cw }
+        return cw;
+    }
+
+    void loadControlWord(unsigned short cw) {
+        __asm { fldcw cw }
+    }
+
+    std::string hex4(unsigned value) {
+        char buffer[16];
+        std::snprintf(buffer, sizeof buffer, "0x%04X", value);
+        return buffer;
+    }
+
+    unsigned short s_threadControlWord;
+    unsigned s_threadMXCSR;
+
+    unsigned __stdcall floatingPointThread(void *) {
+        s_threadControlWord = readControlWord();
+        s_threadMXCSR = _mm_getcsr();
+        return 0;
+    }
+
+    DWORD __stdcall floatingPointThreadWin32(void *parameter) {
+        return floatingPointThread(parameter);
+    }
+
+    // moresampler runs _fpreset (fninit, 0x37F) in its main thread before libgomp creates the
+    // worker threads with _beginthreadex. The creator is set to 0x37F and to 0x07F (24-bit
+    // precision) to determine whether a new thread inherits the control word of its creator.
+    // threads.txt: the control word and MXCSR of the main thread when the probe starts, which
+    // earlier probes may have changed, then one row per creation function and creator with the
+    // control word of the creator and the control word and MXCSR of the new thread.
+    void probeThreads(const std::string &outDir) {
+        Output output(outDir, "threads.txt");
+        unsigned short initial = readControlWord();
+        output.line({"creator-before", hex4(initial), hex4(_mm_getcsr())});
+
+        for (unsigned short creator :
+             {static_cast<unsigned short>(0x37F), static_cast<unsigned short>(0x07F)}) {
+            if (creator == 0x37F) {
+                __asm { fninit }
+            } else {
+                loadControlWord(creator);
+            }
+            std::string actual = hex4(readControlWord());
+
+            HANDLE thread = CreateThread(nullptr, 0, floatingPointThreadWin32, nullptr, 0, nullptr);
+            WaitForSingleObject(thread, INFINITE);
+            CloseHandle(thread);
+            output.line({"CreateThread", actual, hex4(s_threadControlWord), hex4(s_threadMXCSR)});
+
+            uintptr_t crtThread =
+                crt._beginthreadex(nullptr, 0, floatingPointThread, nullptr, 0, nullptr);
+            WaitForSingleObject(reinterpret_cast<HANDLE>(crtThread), INFINITE);
+            CloseHandle(reinterpret_cast<HANDLE>(crtThread));
+            output.line({"_beginthreadex", actual, hex4(s_threadControlWord), hex4(s_threadMXCSR)});
+        }
+        loadControlWord(initial);
+    }
+
+    // ----------------------------------------------------------------------------------------
     // File modes
     // ----------------------------------------------------------------------------------------
 
@@ -1359,5 +1427,6 @@ int main(int argc, char *argv[]) {
     probeUtf8(outDir);
     probeNls(outDir);
     probeFullPath(outDir, scratch);
+    probeThreads(outDir);
     return 0;
 }
