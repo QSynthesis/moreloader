@@ -16,7 +16,7 @@
 
 QEMU 的 `helper_fsin`、`helper_fcos`、`helper_fsincos`、`helper_fptan` 把 80 位的参数转换为 double，以主机的 `sin`、`cos`、`tan` 计算后转换回 80 位，参数与结果都只有 53 位。补丁把参数无损转换为主机的 binary128 `long double`，以 `sinl`、`cosl`、`tanl` 计算，再按 64 位尾数舍入回 80 位。参数范围的检查不变。补丁要求主机的 `long double` 为 binary128（riscv64 与 aarch64 的 Linux），否则编译失败。
 
-依据与实测见 [`docs/20260929-riscv.md`](../../docs/20260929-riscv.md)。
+依据与实测见 [`docs/claude/20260929-riscv.md`](../../docs/claude/20260929-riscv.md)。
 
 ## 构建
 

@@ -133,7 +133,7 @@ moresampler 静态链接了大量库，这些库不是逆向对象。识别之�
 
 ## 证据记录
 
-- 开始依据逆向结论修改包装层之前，先用 [`reverse-evidence-template.md`](reverse-evidence-template.md) 固定当前函数、调用链或小切片的逆向证据，存为 `docs/<yyyymmdd>-<task>.md` 的一节或单独的文件。
+- 开始依据逆向结论修改包装层之前，先用 [`reverse-evidence-template.md`](reverse-evidence-template.md) 固定当前函数、调用链或小切片的逆向证据，存为 `docs/claude/<yyyymmdd>-<task>.md` 的一节或单独的文件。
 - 证据记录优先引用具体函数、地址、调用点和指令区间，不要只写「看了 strings、symbols 或某个大文件」。
 - `Confirmed` 与 `Inferred` 必须分开写。没有直接证据支持的行为不要混入 `Confirmed`。
 

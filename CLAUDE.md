@@ -19,7 +19,7 @@ moreloader 是不依赖 Wine 的最小 PE 加载器与 Windows API 包装层，�
 | 逆向：Ghidra 工程、bridge、`decomp/` 目录、命名与类型修复 | [`docs/ReverseGuide.md`](docs/ReverseGuide.md) |
 | 逆向证据记录模板 | [`docs/reverse-evidence-template.md`](docs/reverse-evidence-template.md) |
 | 项目状态与待办事项 | [`docs/Status.md`](docs/Status.md) |
-| 工作日志 | `docs/<yyyymmdd>-<task>.md` |
+| 工作日志 | `docs/claude/<yyyymmdd>-<task>.md` |
 
 ### 工具链
 
@@ -48,7 +48,7 @@ ctest --test-dir build --no-tests=error
   - MSVC 2022：用于编译在 Windows 上测量 `msvcrt.dll` 行为的探针程序。
 - 另一台 Linux 主机 `ssh overworld`（Ubuntu 22.04，GCC 11）可作为备用测试环境，同样没有 `gcc-multilib`。
 - **里程碑 2 的 ARM64 主机**：`ssh spark`（aarch64，Ubuntu 24.04，20 核，GCC 13）。FEX-Emu 已构建在 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`，以 `FEX ./moreloader <moresampler.exe> …` 运行 x86 的加载器。加载器静态链接，因此不需要 x86 的 rootfs。
-- **box64 的主机**：`ssh dp1000`（**riscv64**，Ubuntu 24.04，8 核，GCC 13）。box64 0.4.5 的源码在 `~/box64-ae-cpp`（不是 git 仓库），其 `build/` 未启用 BOX32，不能运行 32 位程序，不要改动。启用 BOX32 的构建在 `~/moreloader-m2/box32-build/box64`（`-DRV64=1 -DBOX32=ON`）。box32 只运行动态链接的程序，加载器须以 `-DMORE_STATIC=OFF -DMORE_BUILD_TESTS=OFF` 另行构建（构建目录如 `build-dynamic/`），并设置 `BOX64_DYNAREC_FASTROUND=0`，否则 x87 的浮点转整数舍入错误。**RISC-V 采用打补丁的 qemu-i386**（作者决定）：QEMU v11.1.2 加 `third-party/qemu/x87-binary128-transcendentals.patch`，构建在 `~/moreloader-m2/qemu-v11.1.2-build/qemu-i386`，直接运行静态链接的加载器。结果见 `docs/20260929-riscv.md`。
+- **box64 的主机**：`ssh dp1000`（**riscv64**，Ubuntu 24.04，8 核，GCC 13）。box64 0.4.5 的源码在 `~/box64-ae-cpp`（不是 git 仓库），其 `build/` 未启用 BOX32，不能运行 32 位程序，不要改动。启用 BOX32 的构建在 `~/moreloader-m2/box32-build/box64`（`-DRV64=1 -DBOX32=ON`）。box32 只运行动态链接的程序，加载器须以 `-DMORE_STATIC=OFF -DMORE_BUILD_TESTS=OFF` 另行构建（构建目录如 `build-dynamic/`），并设置 `BOX64_DYNAREC_FASTROUND=0`，否则 x87 的浮点转整数舍入错误。**RISC-V 采用打补丁的 qemu-i386**（作者决定）：QEMU v11.1.2 加 `third-party/qemu/x87-binary128-transcendentals.patch`，构建在 `~/moreloader-m2/qemu-v11.1.2-build/qemu-i386`，直接运行静态链接的加载器。结果见 `docs/claude/20260929-riscv.md`。
 
 ## 本仓库的约束
 
@@ -157,7 +157,7 @@ ctest --test-dir build --no-tests=error
 3. 如果有足够的证据，修复类型时可以在 Ghidra 中建立 enum 替换伪代码中的纯数值，建立 struct 替换伪代码中的字节偏移读写。除全局变量外，参数与局部变量也应尽可能修复。
 4. 确定函数名以后，将导出文件命名为 `<函数名>.c`（与 Ghidra 中的函数名一致，形如 `FUN_<地址>_<语义名>.c`）。
 5. 静态链接的库（MinGW 运行库、winpthreads、libgcc、Lua、libllsm 等）只识别并标名，不逆向，见 [`docs/ReverseGuide.md`](docs/ReverseGuide.md)「静态链接的库」。
-6. 在 `docs/` 中为每项任务建立 `<yyyymmdd>-<task>.md` 作为日志，每一步记录做了什么、遇到了什么问题、目前情况如何、下一步做什么，以及执行中值得记录的关键信息。任务进度到达里程碑时可以建立新的日志。
+6. 在 `docs/claude/` 中为每项任务建立 `<yyyymmdd>-<task>.md` 作为日志，每一步记录做了什么、遇到了什么问题、目前情况如何、下一步做什么，以及执行中值得记录的关键信息。任务进度到达里程碑时可以建立新的日志。
 
 ## 已知问题
 

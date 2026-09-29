@@ -4,15 +4,15 @@
 
 | 部分 | 状态 |
 |---|---|
-| 构建环境 | 32 位工具链文件、无管理员权限的 i386 overlay、32 位 qmsetup、stdcorelib 与 Boost.Test，见 [`20260928-repo-setup.md`](20260928-repo-setup.md) |
+| 构建环境 | 32 位工具链文件、无管理员权限的 i386 overlay、32 位 qmsetup、stdcorelib 与 Boost.Test，见 [`20260928-repo-setup.md`](claude/20260928-repo-setup.md) |
 | 指导文档 | `CLAUDE.md`、[`Development.md`](Development.md)、[`ReverseGuide.md`](ReverseGuide.md)、[`TaskSpec.md`](TaskSpec.md) |
 | 逆向 | Ghidra 工程已建立，bridge 可用；导入函数的调用点、文件打开模式与 `sinh` 的调用点已统计 |
-| msvcrt 实测 | 探针 `moreloader/tests/probe/msvcrt` 与黄金数据，结论见 [`20260928-msvcrt-measurements.md`](20260928-msvcrt-measurements.md) |
+| msvcrt 实测 | 探针 `moreloader/tests/probe/msvcrt` 与黄金数据，结论见 [`20260928-msvcrt-measurements.md`](claude/20260928-msvcrt-measurements.md) |
 | `MoreLoaderSupport` | `CodePage`（Windows 规则的 UTF-8 解码）、`CommandLine`（`CommandLineToArgvW` 规则）、`PathMapping`（`Z:` 映射）、`Diagnostics`、`FloatingPoint`，均有测试 |
 | `MoreLoaderCRT` | msvcrt 的纯计算部分：printf 引擎、`qsort`、`rand`、`strtol` 族与 `atof`、字符分类、`strerror` 与 `asctime`、导入的数学函数，均与黄金数据比对 |
 | `MoreLoaderImage` | PE 解析与固定基址映射，尚无测试 |
 | `MoreLoaderRuntime` | 导出注册表、TEB 与 FS 段、客体线程、内核对象与等待、进程启动与退出、桩代码与故障报告，尚未运行 |
-| `MoreLoaderWinAPI` 与 CRT 的导出包装 | 已实现；不带参数运行 moresampler 的行为与 Windows 一致，见 [`20260928-loader-first-run.md`](20260928-loader-first-run.md) |
+| `MoreLoaderWinAPI` 与 CRT 的导出包装 | 已实现；不带参数运行 moresampler 的行为与 Windows 一致，见 [`20260928-loader-first-run.md`](claude/20260928-loader-first-run.md) |
 
 ## 待办
 
@@ -22,7 +22,7 @@
 - [x] Windows 探针：`msvcrt.dll` 的 printf、`qsort`、`rand`、文件模式、数学函数
 - [x] kernel32 与 msvcrt 的导出包装
 - [x] 驱动运行到 `main`
-- [x] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）：逐字节一致，见 [`20260929-first-comparison.md`](20260929-first-comparison.md)
+- [x] 频率表生成的比较（`desc.mrq`，排除时间戳，与 `.llsm`）：逐字节一致，见 [`20260929-first-comparison.md`](claude/20260929-first-comparison.md)
 - [x] 单个音符的渲染（resampler 模式）：逐字节一致
 - [ ] 真实工程的完整渲染：helloutau 生成成对的批处理与 shell 脚本，逐步比较采样
 - [ ] wavtool 模式的比较
@@ -31,16 +31,16 @@
 
 UTAU 自带的 `resampler.exe`（作者 2026-09-29 决定支持）：
 
-- [x] kernel32 的文件句柄、堆、环境变量、代码页与字符分类、`_stat` 所需的函数，按实测实现，见 [`20260929-resampler.md`](20260929-resampler.md)
+- [x] kernel32 的文件句柄、堆、环境变量、代码页与字符分类、`_stat` 所需的函数，按实测实现，见 [`20260929-resampler.md`](claude/20260929-resampler.md)
 - [x] 4 次渲染（含复用 `.frq`、flags、调制、拉伸）的 11 个文件与 Windows 逐字节一致，WSL 与 FEX 均如此
 - UTAU 自带的 `wavtool.exe` 不支持（作者 2026-09-29 决定）。
 
 里程碑 2（Linux ARM64，经 FEX-Emu 或 box64）：
 
 - 环境：`ssh spark`（aarch64），FEX 位于 `/home/functioner/Documents/rover2024/FEX/build/RelWithDebInfo/Bin/FEX`。
-- [x] 定位 FEX 下的 SIGILL：FEX 对 32 位客体的 `modify_ldt` 是中止进程的桩。FS 段改用 `set_thread_area` 的 GDT TLS 项后，频率表生成、resampler 与 wavtool 的 13 个文件与 Windows 逐字节一致，多线程合成同样一致，见 [`20260929-fex.md`](20260929-fex.md)
+- [x] 定位 FEX 下的 SIGILL：FEX 对 32 位客体的 `modify_ldt` 是中止进程的桩。FS 段改用 `set_thread_area` 的 GDT TLS 项后，频率表生成、resampler 与 wavtool 的 13 个文件与 Windows 逐字节一致，多线程合成同样一致，见 [`20260929-fex.md`](claude/20260929-fex.md)
 
-RISC-V（`ssh dp1000`，riscv64），见 [`20260929-riscv.md`](20260929-riscv.md)：
+RISC-V（`ssh dp1000`，riscv64），见 [`20260929-riscv.md`](claude/20260929-riscv.md)：
 
 - [x] box64（BOX32）：需要动态链接的加载器（`MORE_STATIC=OFF`）与 `BOX64_DYNAREC_FASTROUND=0`；resampler 全部一致，moresampler 因 box64 以 double 模拟 x87 而大量不同，差异源已定位到指令
 - [x] qemu-i386：静态链接的加载器可直接运行；moresampler 仅 `bam.wav` 的两个文件不同，原因为 `fsin`、`fcos`、`fsincos`、`fptan` 以 double 计算
