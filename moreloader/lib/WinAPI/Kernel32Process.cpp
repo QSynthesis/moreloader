@@ -303,7 +303,10 @@ namespace more::loader::winapi {
         }
 
         /// Returns a mask of one bit per processor available to the host process, at most 32.
-        /// moresampler derives the number of synthesis threads from it.
+        /// moresampler sets the number of OpenMP threads of its analysis to the number of bits at
+        /// 0x419ae5, regardless of \c multithread-synthesis. The output depends on that number,
+        /// because the main thread computes the first frames with the 64-bit precision of its
+        /// control word and the worker threads compute the others with 53-bit precision.
         BOOL MORE_WINAPI kernel32_GetProcessAffinityMask(HANDLE process, std::uint32_t *processMask,
                                                          std::uint32_t *systemMask) {
             cpu_set_t set;
